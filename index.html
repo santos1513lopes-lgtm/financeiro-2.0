@@ -118,9 +118,7 @@
                 <div class="mb-4">
                     <input id="search-trans" placeholder="🔍 Buscar lançamento..." class="w-full p-3 rounded-xl bg-white dark:bg-darkcard border-none shadow-sm outline-none dark:text-white" />
                 </div>
-                <div id="transaction-list" class="space-y-3">
-                    <div class="text-center text-gray-400 py-10">Carregando...</div>
-                </div>
+                <div id="transaction-list" class="space-y-3"></div>
             </section>
             
              <section id="tab-futuras" class="tab-content hidden">
@@ -137,7 +135,6 @@
             <section id="tab-extrato" class="tab-content hidden">
                 <div id="report-preview" class="bg-white dark:bg-darkcard rounded-xl p-4 overflow-x-auto"></div>
             </section>
-
         </div>
     </div>
 
@@ -146,38 +143,26 @@
     </button>
 
     <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-darkcard border-t dark:border-gray-700 flex justify-around py-3 md:hidden z-50 safe-area-bottom">
-        <button class="nav-item active" data-tab="dashboard">
-            <i class="fas fa-chart-pie text-xl mb-1"></i>
-            <span class="text-[10px]">Painel</span>
-        </button>
-        <button class="nav-item" data-tab="transacoes">
-            <i class="fas fa-list text-xl mb-1"></i>
-            <span class="text-[10px]">Trans.</span>
-        </button>
-        <button class="nav-item" data-tab="futuras">
-            <i class="fas fa-calendar-alt text-xl mb-1"></i>
-            <span class="text-[10px]">Futuro</span>
-        </button>
-        <button class="nav-item" data-tab="extrato">
-            <i class="fas fa-file-alt text-xl mb-1"></i>
-            <span class="text-[10px]">Extrato</span>
-        </button>
+        <button class="nav-item active" data-tab="dashboard"><i class="fas fa-chart-pie text-xl mb-1"></i><span class="text-[10px]">Painel</span></button>
+        <button class="nav-item" data-tab="transacoes"><i class="fas fa-list text-xl mb-1"></i><span class="text-[10px]">Trans.</span></button>
+        <button class="nav-item" data-tab="futuras"><i class="fas fa-calendar-alt text-xl mb-1"></i><span class="text-[10px]">Futuro</span></button>
+        <button class="nav-item" data-tab="extrato"><i class="fas fa-file-alt text-xl mb-1"></i><span class="text-[10px]">Extrato</span></button>
     </nav>
 
     <div id="modal-transaction" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-overlay"></div>
-        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[500px] h-[90vh] md:h-auto bg-white dark:bg-darkcard rounded-t-3xl md:rounded-2xl p-6 shadow-2xl animate-slide-up flex flex-col">
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[500px] h-[95vh] md:h-auto bg-white dark:bg-darkcard rounded-t-3xl md:rounded-2xl p-6 shadow-2xl animate-slide-up flex flex-col">
             
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold dark:text-white">Nova Transação</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold dark:text-white">Transação</h3>
                 <button id="close-modal" class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center dark:text-white"><i class="fas fa-times"></i></button>
             </div>
 
             <form id="form-transaction" class="flex-1 overflow-y-auto pb-20 custom-scrollbar">
                 <input type="hidden" id="tx-id">
                 
-                <div class="mb-6">
-                    <label class="text-xs text-gray-500 font-bold uppercase ml-1">Valor</label>
+                <div class="mb-4">
+                    <label class="text-xs text-gray-500 font-bold uppercase ml-1">Valor Total</label>
                     <div class="relative">
                         <span class="absolute left-0 top-3 text-gray-500 font-bold text-xl">R$</span>
                         <input id="input-amount" type="tel" inputmode="numeric" placeholder="0,00" required class="w-full text-4xl font-bold bg-transparent border-b-2 border-gray-200 dark:border-gray-700 focus:border-yellow-500 outline-none pl-10 py-2 text-gray-800 dark:text-white transition-colors" />
@@ -195,7 +180,7 @@
                     </label>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="text-xs text-gray-500 mb-1 block">Data</label>
                         <input type="date" id="input-date" required class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white">
@@ -207,9 +192,24 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="text-xs text-gray-500 mb-1 block">Descrição</label>
                     <input id="input-desc" placeholder="Ex: Compras" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border dark:border-gray-700">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block font-bold">Repetir?</label>
+                        <select id="input-recurrence" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 outline-none text-sm dark:text-white">
+                            <option value="single">Não (Única)</option>
+                            <option value="installment">Parcelado (x Vezes)</option>
+                            <option value="fixed">Fixo (Todo Mês)</option>
+                        </select>
+                    </div>
+                    <div id="div-installments" class="hidden">
+                        <label class="text-xs text-gray-500 mb-1 block font-bold">Qtd. Meses</label>
+                        <input type="number" id="input-installments" value="2" min="2" max="60" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 outline-none text-sm dark:text-white">
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3 mb-6">
