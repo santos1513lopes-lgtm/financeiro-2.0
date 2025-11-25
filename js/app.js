@@ -174,36 +174,76 @@ function renderExtratoTable(data) {
     el.innerHTML = h + '</tbody></table>';
 }
 
-// --- MODAL & LOGICA DE SALVAR ---
+// --- MODAL SEGURO ---
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
 const inputRecurrence = document.getElementById('input-recurrence');
+const inputFrequency = document.getElementById('input-frequency');
 
-inputAmount.addEventListener('input', (e) => {
-    let v = e.target.value.replace(/\D/g,"");
-    v = (Number(v)/100).toFixed(2)+"";
-    e.target.value = v.replace(".",",");
-});
+if(inputAmount) {
+    inputAmount.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g,"");
+        v = (Number(v)/100).toFixed(2)+"";
+        e.target.value = v.replace(".",",");
+    });
+}
 
-// Mostrar/Esconder campo de parcelas
-inputRecurrence.addEventListener('change', () => {
-    const div = document.getElementById('div-installments');
-    if (inputRecurrence.value === 'single') div.classList.add('hidden');
-    else div.classList.remove('hidden');
-});
+// Eventos de Mostrar/Esconder (Com verificação se elemento existe)
+if(inputRecurrence) {
+    inputRecurrence.addEventListener('change', () => {
+        const divCount = document.getElementById('div-period-count');
+        const divFreq = document.getElementById('div-frequency');
+        if(!divCount || !divFreq) return;
 
+        if (inputRecurrence.value === 'single') {
+            divCount.classList.add('hidden');
+            divFreq.classList.add('hidden');
+        } else {
+            divCount.classList.remove('hidden');
+            divFreq.classList.remove('hidden');
+        }
+    });
+}
+
+if(inputFrequency) {
+    inputFrequency.addEventListener('change', () => {
+        const divCustom = document.getElementById('div-custom-days');
+        if(!divCustom) return;
+        if (inputFrequency.value === 'custom') divCustom.classList.remove('hidden');
+        else divCustom.classList.add('hidden');
+    });
+}
+
+// ABRIR MODAL
 document.getElementById('fab-add').onclick = () => {
     form.reset();
     document.getElementById('tx-id').value = '';
-    document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('input-amount').value = "";
-    document.getElementById('div-installments').classList.add('hidden');
-    modal.classList.remove('hidden');
-};
-document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
+    
+    // Reset seguro
+    const elDate = document.getElementById('input-date');
+    if(elDate) elDate.value = new Date().toISOString().split('T')[0];
+    if(inputAmount) inputAmount.value = "";
+    
+    // Esconder campos
+    const divCount = document.getElementById('div-period-count');
+    const divFreq = document.getElementById('div-frequency');
+    const divCustom = document.getElementById('div-custom-days');
+    if(divCount) divCount.classList.add('hidden');
+    if(divFreq) divFreq.classList.add('hidden');
+    if(divCustom) divCustom.classList.add('hidden');
 
-// --- CÁLCULO E SALVAMENTO ---
+    modal.classList.remove('hidden');
+    modal.classList.add('flex'); // Novo: Adiciona Flex ao abrir
+};
+
+// FECHAR MODAL
+document.getElementById('close-modal').onclick = () => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex'); // Novo: Remove Flex ao fechar
+};
+
+// CÁLCULO E SALVAR
 form.onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-save');
@@ -220,56 +260,45 @@ form.onsubmit = async (e) => {
         const isPaid = document.getElementById('input-paid').checked;
         const recurrence = document.getElementById('input-recurrence').value;
         const count = parseInt(document.getElementById('input-installments').value) || 1;
+        const frequency = document.getElementById('input-frequency').value;
+        const customDays = parseInt(document.getElementById('input-custom-days').value) || 10;
 
         const baseData = { user_id: currentUser.uid, type, category, status: isPaid ? 'efetivado' : 'pendente' };
 
-        // EDIÇÃO (apenas um)
         if (id) {
             await updateDoc(doc(db, "transactions", id), { ...baseData, amount: totalAmount, date: baseDate, description: desc });
         } 
-        // NOVO LANÇAMENTO
         else {
-            const batch = writeBatch(db); // Para salvar tudo junto
+            const batch = writeBatch(db);
 
             if (recurrence === 'single') {
-                // Simples
                 await addDoc(collection(db, "transactions"), { ...baseData, amount: totalAmount, date: baseDate, description: desc });
             } 
-            else if (recurrence === 'installment') {
-                // Parcelado (Divide valor)
-                const partValue = Math.floor((totalAmount / count) * 100) / 100;
-                const remainder = Math.round((totalAmount - (partValue * count)) * 100) / 100;
+            else {
+                let finalAmountEach = totalAmount;
+                let remainder = 0;
+                if (recurrence === 'installment') {
+                    finalAmountEach = Math.floor((totalAmount / count) * 100) / 100;
+                    remainder = Math.round((totalAmount - (finalAmountEach * count)) * 100) / 100;
+                }
 
                 for (let i = 0; i < count; i++) {
                     const myDate = new Date(baseDate + 'T12:00:00');
-                    myDate.setMonth(myDate.getMonth() + i);
                     
-                    // Adiciona centavos na primeira parcela
-                    const finalValue = (i === 0) ? (partValue + remainder) : partValue;
+                    if (frequency === 'monthly') myDate.setMonth(myDate.getMonth() + i);
+                    else if (frequency === 'biweekly') myDate.setDate(myDate.getDate() + (i * 15));
+                    else if (frequency === 'custom') myDate.setDate(myDate.getDate() + (i * customDays));
                     
-                    const newDoc = doc(collection(db, "transactions"));
-                    batch.set(newDoc, {
-                        ...baseData,
-                        amount: Number(finalValue.toFixed(2)),
-                        date: myDate.toISOString().split('T')[0],
-                        description: `${desc} (${i+1}/${count})`,
-                        status: (i === 0 && isPaid) ? 'efetivado' : 'pendente' // Só o primeiro pago se marcado
-                    });
-                }
-                await batch.commit();
-            } 
-            else if (recurrence === 'fixed') {
-                // Fixo (Repete valor)
-                for (let i = 0; i < count; i++) {
-                    const myDate = new Date(baseDate + 'T12:00:00');
-                    myDate.setMonth(myDate.getMonth() + i);
+                    const valueThisTime = (recurrence === 'installment' && i === 0) ? (finalAmountEach + remainder) : finalAmountEach;
+                    let descText = desc;
+                    if(recurrence === 'installment') descText = `${desc} (${i+1}/${count})`;
                     
                     const newDoc = doc(collection(db, "transactions"));
                     batch.set(newDoc, {
                         ...baseData,
-                        amount: totalAmount,
+                        amount: Number(valueThisTime.toFixed(2)),
                         date: myDate.toISOString().split('T')[0],
-                        description: desc, // Não numera fixos
+                        description: descText,
                         status: (i === 0 && isPaid) ? 'efetivado' : 'pendente'
                     });
                 }
@@ -277,6 +306,7 @@ form.onsubmit = async (e) => {
             }
         }
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
         form.reset();
     } catch (error) {
         alert("Erro: " + error.message);
@@ -285,30 +315,38 @@ form.onsubmit = async (e) => {
     }
 };
 
-// AUX
 window.editTransaction = (id) => {
     const t = transactions.find(x => x.id === id); if(!t) return;
     document.getElementById('tx-id').value = id;
-    document.getElementById('input-amount').value = t.amount.toFixed(2).replace('.',',');
+    if(inputAmount) inputAmount.value = t.amount.toFixed(2).replace('.',',');
     document.getElementById('input-desc').value = t.description;
     document.getElementById('input-date').value = t.date;
     document.getElementById('input-category').value = t.category;
-    document.querySelector(`input[name="type"][value="${t.type}"]`).checked = true;
+    const rt = document.querySelector(`input[name="type"][value="${t.type}"]`);
+    if(rt) rt.checked = true;
     document.getElementById('input-paid').checked = (t.status === 'efetivado');
-    // Em edição, esconde recorrência para não duplicar
-    document.getElementById('div-installments').classList.add('hidden');
-    document.getElementById('input-recurrence').value = 'single';
+
+    const divCount = document.getElementById('div-period-count');
+    const divFreq = document.getElementById('div-frequency');
+    if(divCount) divCount.classList.add('hidden');
+    if(divFreq) divFreq.classList.add('hidden');
+    if(inputRecurrence) inputRecurrence.value = 'single';
+
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
 };
+
 window.payTransaction = async (id) => {
     const e = window.event; e.cancelBubble=true; if(e.stopPropagation) e.stopPropagation();
     if(confirm("Pagar?")) await updateDoc(doc(db, "transactions", id), { status: 'efetivado' });
 };
+
 function loadCategories() {
     const cats = ["Alimentação", "Transporte", "Moradia", "Lazer", "Saúde", "Educação", "Mercado", "Restaurante", "Salário", "Vendas", "Serviços", "Investimento", "Outros"];
     const sel = document.getElementById('input-category'); sel.innerHTML = '';
     cats.forEach(c => { const o = document.createElement('option'); o.value=c; o.innerText=c; sel.appendChild(o); });
 }
+
 function renderChart(data) {
     const ctx = document.getElementById('expenseChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
@@ -316,5 +354,6 @@ function renderChart(data) {
     const cats={}; ex.forEach(t=>{cats[t.category]=(cats[t.category]||0)+t.amount});
     chartInstance=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:document.body.classList.contains('dark')?'#cbd5e1':'#4b5563'}}},cutout:'75%'}});
 }
+
 function fmtMoney(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 function fmtDate(d) { return d.split('-').reverse().join('/'); }
