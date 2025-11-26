@@ -35,6 +35,7 @@
             <span class="text-xl font-bold tracking-wide">Gestão <span class="text-blue-400">Pro</span></span>
         </div>
         <div class="flex gap-3 items-center">
+            <button id="btn-toggle-values-mobile" class="text-gray-300 hover:text-white"><i class="fas fa-eye"></i></button>
             <button id="btn-theme-mobile" class="text-gray-300 hover:text-white"><i class="fas fa-moon"></i></button>
             <div class="relative">
                 <button id="btn-profile-mobile" class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/20">U</button>
@@ -49,6 +50,9 @@
         </div>
         
         <div class="flex items-center gap-4">
+            <button id="btn-toggle-values-desktop" class="text-gray-300 hover:text-white transition" title="Ocultar Valores">
+                <i class="fas fa-eye text-lg"></i>
+            </button>
             <button id="btn-theme-desktop" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 text-yellow-400 flex items-center justify-center transition shadow-inner">
                 <i class="fas fa-moon"></i>
             </button>
@@ -61,17 +65,14 @@
                     </div>
                     <div id="avatar-display" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-slate-600 hover:ring-blue-400 transition cursor-pointer">?</div>
                 </button>
-                
                 <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-64 bg-white dark:bg-darkcard rounded-xl shadow-2xl py-2 border border-slate-100 dark:border-gray-700 z-50 transform origin-top-right transition-all">
                     <div class="px-4 py-3 border-b dark:border-gray-700">
                         <p class="text-xs text-slate-500 dark:text-slate-400">Logado como:</p>
                         <p id="user-email-display" class="text-sm font-bold text-slate-800 dark:text-white truncate">...</p>
                     </div>
-                    
                     <button id="btn-wipe-data" class="w-full text-left px-4 py-2 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium border-b dark:border-gray-700">
                         <i class="fas fa-eraser mr-2"></i> Zerar Dados
                     </button>
-
                     <button id="btn-logout-dropdown" class="w-full text-left px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">
                         <i class="fas fa-sign-out-alt mr-2"></i> Sair
                     </button>
@@ -116,11 +117,33 @@
 
                 <section id="tab-dashboard" class="tab-content">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Faturamento</div><div id="dash-receitas" class="text-2xl font-bold text-green-600">R$ 0,00</div></div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div><div id="dash-despesas" class="text-2xl font-bold text-red-600">R$ 0,00</div></div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Resultado</div><div id="dash-saldo" class="text-2xl font-bold text-blue-600">R$ 0,00</div></div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500">
+                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Faturamento</div>
+                            <div class="value-blur text-2xl font-bold text-green-600" id="dash-receitas">R$ 0,00</div>
+                        </div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500">
+                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div>
+                            <div class="value-blur text-2xl font-bold text-red-600" id="dash-despesas">R$ 0,00</div>
+                        </div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
+                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo em Caixa</div>
+                            <div class="value-blur text-2xl font-bold text-blue-600" id="dash-saldo">R$ 0,00</div>
+                        </div>
                     </div>
-                    <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm mb-6 border border-slate-100 dark:border-gray-700"><div class="h-64 relative w-full flex justify-center"><canvas id="expenseChart"></canvas></div></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700">
+                            <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">Distribuição de Custos</h3>
+                            <div class="h-64 relative w-full flex justify-center"><canvas id="expenseChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 flex flex-col">
+                            <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">Últimas Movimentações</h3>
+                            <div id="recent-transactions-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 max-h-[250px]">
+                                <div class="text-center text-gray-400 text-xs">Sem dados recentes.</div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="tab-transacoes" class="tab-content hidden h-full">
@@ -140,7 +163,7 @@
                 
                  <section id="tab-futuras" class="tab-content hidden">
                     <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-4 flex justify-between items-center border border-indigo-100 dark:border-indigo-800">
-                        <div><div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Fluxo Previsto</div><div id="future-balance" class="text-xl font-bold text-slate-700 dark:text-slate-200">R$ ...</div></div>
+                        <div><div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Fluxo Previsto</div><div id="future-balance" class="value-blur text-xl font-bold text-slate-700 dark:text-slate-200">R$ ...</div></div>
                         <i class="fas fa-wallet text-2xl text-indigo-500"></i>
                     </div>
                     <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 border-b border-slate-300 dark:border-slate-700">

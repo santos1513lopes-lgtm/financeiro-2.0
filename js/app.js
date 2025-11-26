@@ -3,13 +3,14 @@ import {
     collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
-    signInWithEmailAndPassword, onAuthStateChanged, signOut 
+    signInWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 let currentUser = null;
 let transactions = [];
 let chartInstance = null;
 let sortConfig = { column: 'date', direction: 'desc' };
+let valuesVisible = true;
 
 const views = {
     dashboard: document.getElementById('tab-dashboard'),
@@ -55,6 +56,29 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// --- MODO PRIVACIDADE (OLHO) ---
+const toggleValues = () => {
+    valuesVisible = !valuesVisible;
+    const elements = document.querySelectorAll('.value-blur');
+    const icons = [document.getElementById('btn-toggle-values-desktop'), document.getElementById('btn-toggle-values-mobile')];
+    
+    elements.forEach(el => {
+        if(valuesVisible) {
+            el.classList.remove('blur-sm', 'select-none');
+        } else {
+            el.classList.add('blur-sm', 'select-none');
+        }
+    });
+
+    icons.forEach(btn => {
+        if(btn) btn.innerHTML = valuesVisible ? '<i class="fas fa-eye text-lg"></i>' : '<i class="fas fa-eye-slash text-lg"></i>';
+    });
+};
+
+if(document.getElementById('btn-toggle-values-desktop')) document.getElementById('btn-toggle-values-desktop').onclick = toggleValues;
+if(document.getElementById('btn-toggle-values-mobile')) document.getElementById('btn-toggle-values-mobile').onclick = toggleValues;
+
+
 // Dropdown e Zerar Dados
 const btnProfile = document.getElementById('btn-profile-desktop');
 const dropdown = document.getElementById('profile-dropdown');
@@ -72,7 +96,6 @@ if(btnWipe) {
                 try {
                     const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
                     const snapshot = await getDocs(q);
-                    // Apaga um por um (mais seguro para lotes pequenos/medios)
                     const promises = snapshot.docs.map(d => deleteDoc(d.ref));
                     await Promise.all(promises);
                     alert("Todos os dados foram apagados com sucesso.");
@@ -87,7 +110,7 @@ if(btnWipe) {
 
 const logout = () => { if(confirm("Sair do sistema?")) signOut(auth); };
 if(document.getElementById('btn-logout-dropdown')) document.getElementById('btn-logout-dropdown').onclick = logout;
-if(document.getElementById('btn-user-menu-mobile')) document.getElementById('btn-user-menu-mobile').onclick = logout;
+if(document.getElementById('btn-user-menu-mobile')) document.getElementById('btn-user-menu-mobile').onclick = logout; // Agora perfil mobile faz logout? Ou abre menu? No HTML acima não tem menu mobile, então assume-se logout ou nada. Vou manter logout por segurança.
 
 document.getElementById('btn-login').onclick = async () => {
     const email = document.getElementById('email').value;
@@ -170,10 +193,16 @@ function updateInterface() {
     renderTransactionList(filterData(data, term));
     
     renderFutureList(); 
+    renderRecentList(data); // Nova Função
     renderChart(data);
     
     const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
     renderExtratoTable(filterData(data, termRep));
+    
+    // Reaplica blur se necessário após atualização
+    if(!valuesVisible) {
+        document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none'));
+    }
 }
 
 function filterData(data, term) {
@@ -187,6 +216,7 @@ function filterData(data, term) {
 if(document.getElementById('search-trans')) document.getElementById('search-trans').addEventListener('input', (e) => renderTransactionList(filterData(getCurrentMonthData(), e.target.value.toLowerCase())));
 if(document.getElementById('search-report')) document.getElementById('search-report').addEventListener('input', (e) => renderExtratoTable(filterData(getCurrentMonthData(), e.target.value.toLowerCase())));
 
+// --- ORDENAÇÃO ---
 window.toggleSort = (col) => {
     if (sortConfig.column === col) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
     else { sortConfig.column = col; sortConfig.direction = 'asc'; }
@@ -238,6 +268,35 @@ if(document.getElementById('btn-download-csv')) document.getElementById('btn-dow
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
 };
 
+// RENDER LISTA RECENTE (DASHBOARD)
+function renderRecentList(data) {
+    const el = document.getElementById('recent-transactions-list');
+    if(!el) return;
+    el.innerHTML = '';
+    
+    // Copia e ordena por data decrescente
+    const recent = [...data].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+    
+    if(recent.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Sem movimentações.</div>'; return; }
+    
+    recent.forEach(t => {
+        const isExp = t.type === 'saida';
+        const color = isExp ? 'text-red-600' : 'text-green-600';
+        const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
+        const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
+        
+        el.innerHTML += `
+            <div class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition">
+                <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-slate-700 dark:text-gray-200 text-sm truncate">${t.description}</div>
+                    <div class="text-xs text-gray-400">${fmtDate(t.date)}</div>
+                </div>
+                <div class="font-bold ${color} text-sm value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
+            </div>`;
+    });
+}
+
 // RENDER (Lista Principal)
 function renderTransactionList(data) {
     const el = document.getElementById('transaction-list');
@@ -255,12 +314,12 @@ function renderTransactionList(data) {
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center ${color}"><i class="fas ${isExp?'fa-arrow-down':'fa-arrow-up'}"></i></div>
                     <div class="flex-1"><div class="font-bold text-slate-800 dark:text-gray-100 text-sm truncate">${t.description}</div><div class="text-xs text-gray-400">${fmtDate(t.date)} • ${getIcon(t.category)} ${t.category}</div></div>
-                    <div class="text-right"><div class="font-bold ${color} text-sm">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div><div>${statusBadge}</div></div>
+                    <div class="text-right"><div class="font-bold ${color} text-sm value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div><div>${statusBadge}</div></div>
                 </div>
                 <div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono">${fmtDate(t.date)}</div>
                 <div class="hidden md:block text-sm font-medium text-slate-800 dark:text-gray-100 col-span-4 truncate">${t.description}</div>
                 <div class="hidden md:block text-sm text-slate-500 col-span-2 truncate">${getIcon(t.category)} ${t.category}</div>
-                <div class="hidden md:block text-sm font-bold text-right col-span-2 ${color}">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
+                <div class="hidden md:block text-sm font-bold text-right col-span-2 ${color} value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
                 <div class="hidden md:block text-center col-span-1">${statusBadge}</div>
                 <div class="hidden md:flex justify-center col-span-1"><button onclick="deleteTransaction('${t.id}')" class="text-gray-400 hover:text-red-500 transition p-2" title="Excluir"><i class="fas fa-trash"></i></button></div>
             </div>`;
@@ -297,11 +356,11 @@ function renderFutureList() {
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-8 h-8 rounded-full ${bgIcon} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
                     <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-500 font-bold':'text-gray-400'}">${isLate?'VENCIDA':fmtDate(t.date)}</div></div>
-                    <div class="text-right"><div class="text-sm font-bold ${color}">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
+                    <div class="text-right"><div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
                 </div>
                 <div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono ${isLate?'text-red-500 font-bold':''}">${fmtDate(t.date)}</div>
                 <div class="hidden md:block text-sm font-medium text-slate-800 dark:text-gray-100 col-span-5 truncate">${t.description}</div>
-                <div class="hidden md:block text-sm font-bold text-right col-span-3 ${color}">${fmtMoney(t.amount)}</div>
+                <div class="hidden md:block text-sm font-bold text-right col-span-3 ${color} value-blur">${fmtMoney(t.amount)}</div>
                 <div class="hidden md:flex justify-center col-span-2">
                     <button onclick="payTransaction('${t.id}')" class="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-bold px-3 py-1 rounded transition">Baixar</button>
                 </div>
@@ -324,7 +383,7 @@ function renderExtratoTable(data) {
         h += `<div class="grid grid-cols-12 gap-4 p-3 ${rowBg} border-b border-slate-100 dark:border-gray-700 items-center">
             <div class="col-span-2 text-sm font-mono">${fmtDate(t.date)}</div>
             <div class="col-span-6 text-sm font-medium truncate">${getIcon(t.category)} ${t.description}</div>
-            <div class="col-span-4 text-sm font-bold text-right ${t.type==='saida'?'text-red-600':'text-green-600'}">${fmtMoney(t.amount)}</div>
+            <div class="col-span-4 text-sm font-bold text-right ${t.type==='saida'?'text-red-600':'text-green-600'} value-blur">${fmtMoney(t.amount)}</div>
         </div>`;
     });
     el.innerHTML = h + '</div>';
@@ -419,17 +478,16 @@ window.editTransaction = (id) => {
     document.getElementById('input-desc').value=t.description;
     document.getElementById('input-date').value=t.date;
     document.getElementById('input-category').value=t.category;
-    document.querySelector(`input[name="type"][value="${t.type}"]`).checked=true;
-    const pb=document.getElementById('input-paid');
-    pb.checked=(t.status==='efetivado');
+    const rt = document.querySelector(`input[name="type"][value="${t.type}"]`);
+    if(rt) rt.checked = true;
+    const paidBox = document.getElementById('input-paid');
+    paidBox.checked = (t.status === 'efetivado');
     if(statusText) {
-        if(pb.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
+        if(paidBox.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
         else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
     }
-    const dpc = document.getElementById('div-period-count');
-    const df = document.getElementById('div-frequency');
-    if(dpc) dpc.classList.add('hidden');
-    if(df) df.classList.add('hidden');
+    document.getElementById('div-period-count').classList.add('hidden');
+    document.getElementById('div-frequency').classList.add('hidden');
     document.getElementById('input-recurrence').value='single';
     if(btnDelete){btnDelete.classList.remove('hidden'); btnDelete.onclick=()=>deleteTransaction(id);}
     modal.classList.remove('hidden'); modal.classList.add('flex');
