@@ -1,21 +1,26 @@
- {
+{
   "name": "Gestão Empresarial Pro",
   "short_name": "Gestão Pro",
+  "description": "Sistema completo de gestão financeira para pequenas e médias empresas. Controle fluxo de caixa, contas a pagar, parcelamentos e gere relatórios em PDF e CSV. Tudo na palma da mão, online e seguro.",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait",
+  "categories": ["finance", "business", "productivity"],
   "icons": [
     {
       "src": "icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }
