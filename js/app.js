@@ -1,6 +1,6 @@
  import { db, auth } from './firebase.js';
 import { 
-    collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch 
+    collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
     signInWithEmailAndPassword, onAuthStateChanged, signOut 
@@ -26,33 +26,63 @@ const categoryIcons = {
 };
 function getIcon(cat) { return categoryIcons[cat] || "🔹"; }
 
+// --- AUTH & PROFILE ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-content').classList.remove('hidden');
-        if(document.getElementById('top-controls')) document.getElementById('top-controls').classList.remove('hidden');
-        if(document.getElementById('top-controls')) document.getElementById('top-controls').classList.add('md:flex');
+        if(document.getElementById('top-controls')) {
+            document.getElementById('top-controls').classList.remove('hidden');
+            document.getElementById('top-controls').classList.add('md:flex');
+        }
         
         const email = user.email;
         document.getElementById('user-email-display').innerText = email;
         document.getElementById('user-name-display').innerText = "Olá, " + email.split('@')[0];
         document.getElementById('avatar-display').innerText = email.charAt(0).toUpperCase();
         document.getElementById('btn-profile-mobile').innerText = email.charAt(0).toUpperCase();
+
         initApp();
     } else {
         currentUser = null;
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('app-content').classList.add('hidden');
-        if(document.getElementById('top-controls')) document.getElementById('top-controls').classList.add('hidden');
+        if(document.getElementById('top-controls')) {
+            document.getElementById('top-controls').classList.add('hidden');
+            document.getElementById('top-controls').classList.remove('md:flex');
+        }
     }
 });
 
+// Dropdown e Zerar Dados
 const btnProfile = document.getElementById('btn-profile-desktop');
 const dropdown = document.getElementById('profile-dropdown');
 if(btnProfile && dropdown) {
     btnProfile.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); };
     window.addEventListener('click', (e) => { if (!btnProfile.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
+}
+
+const btnWipe = document.getElementById('btn-wipe-data');
+if(btnWipe) {
+    btnWipe.onclick = async () => {
+        if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. O saldo voltará a zero. Deseja continuar?")) {
+            const confirm2 = prompt("Digite a palavra ZERAR para confirmar:");
+            if(confirm2 === "ZERAR") {
+                try {
+                    const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
+                    const snapshot = await getDocs(q);
+                    // Apaga um por um (mais seguro para lotes pequenos/medios)
+                    const promises = snapshot.docs.map(d => deleteDoc(d.ref));
+                    await Promise.all(promises);
+                    alert("Todos os dados foram apagados com sucesso.");
+                    window.location.reload();
+                } catch(err) {
+                    alert("Erro ao apagar dados: " + err.message);
+                }
+            }
+        }
+    };
 }
 
 const logout = () => { if(confirm("Sair do sistema?")) signOut(auth); };
@@ -67,6 +97,7 @@ document.getElementById('btn-login').onclick = async () => {
     catch (error) { document.getElementById('auth-msg').textContent = "Acesso negado."; }
 };
 
+// --- TEMA ---
 const htmlEl = document.documentElement;
 const themeBtns = [document.getElementById('btn-theme-mobile'), document.getElementById('btn-theme-desktop')];
 function applyTheme(isDark) {
@@ -77,6 +108,7 @@ if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') 
 else applyTheme(false);
 themeBtns.forEach(b => b.onclick = () => applyTheme(!htmlEl.classList.contains('dark')));
 
+// --- NAVEGAÇÃO ---
 function switchTab(tabName) {
     Object.values(views).forEach(el => { if(el) el.classList.add('hidden'); });
     if(views[tabName]) views[tabName].classList.remove('hidden');
@@ -96,11 +128,12 @@ function switchTab(tabName) {
 }
 document.querySelectorAll('.nav-item, .nav-desktop').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
+// --- APP LOGIC ---
 async function initApp() {
     const today = new Date().toISOString().slice(0, 7);
     const deskDate = document.getElementById('global-month');
     const mobDate = document.getElementById('global-month-mobile');
-    if(!deskDate.value) deskDate.value = today;
+    if(deskDate && !deskDate.value) deskDate.value = today;
     if(mobDate && !mobDate.value) mobDate.value = today;
     loadCategories();
     const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
@@ -121,7 +154,8 @@ if(document.getElementById('global-month')) document.getElementById('global-mont
 if(document.getElementById('global-month-mobile')) document.getElementById('global-month-mobile').addEventListener('change', syncDate);
 
 function getCurrentMonthData() {
-    return transactions.filter(t => t.date.startsWith(document.getElementById('global-month').value));
+    const el = document.getElementById('global-month');
+    return el ? transactions.filter(t => t.date.startsWith(el.value)) : [];
 }
 
 function updateInterface() {
@@ -135,8 +169,7 @@ function updateInterface() {
     const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
     renderTransactionList(filterData(data, term));
     
-    renderFutureList(); // Agora renderiza com sorting
-    
+    renderFutureList(); 
     renderChart(data);
     
     const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
@@ -234,7 +267,7 @@ function renderTransactionList(data) {
     });
 }
 
-// RENDER (Contas Futuras) - AGORA COM TABELA E ORDENAÇÃO
+// RENDER (Contas Futuras)
 function renderFutureList() {
     const today = new Date().toISOString().split('T')[0];
     const pending = transactions.filter(t => t.status === 'pendente');
@@ -249,8 +282,6 @@ function renderFutureList() {
     el.innerHTML = '';
     if(pending.length===0) { el.innerHTML='<div class="text-center text-gray-400 text-xs py-4">Tudo em dia!</div>'; return; }
     
-    // Usa o sortConfig para ordenar também esta lista se quiseres, ou força por data
-    // Por padrão, listas futuras ordenam-se melhor por data, mas se usarmos sortData, obedece ao clique no cabeçalho
     sortData(pending);
 
     pending.forEach((t, idx) => {
@@ -265,7 +296,7 @@ function renderFutureList() {
             <div class="group ${rowBg} p-3 border-b border-slate-100 dark:border-gray-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-8 h-8 rounded-full ${bgIcon} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
-                    <div class="flex-1"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate">${t.description}</span><div class="text-xs ${isLate?'text-red-500 font-bold':'text-gray-400'}">${isLate?'VENCIDA':fmtDate(t.date)}</div></div>
+                    <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-500 font-bold':'text-gray-400'}">${isLate?'VENCIDA':fmtDate(t.date)}</div></div>
                     <div class="text-right"><div class="text-sm font-bold ${color}">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
                 </div>
                 <div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono ${isLate?'text-red-500 font-bold':''}">${fmtDate(t.date)}</div>
@@ -278,7 +309,7 @@ function renderFutureList() {
     });
 }
 
-// RENDER (Extrato Relatórios - Limpo)
+// RENDER (Extrato Relatórios)
 function renderExtratoTable(data) {
     const el = document.getElementById('report-preview');
     if(!el) return;
@@ -287,7 +318,6 @@ function renderExtratoTable(data) {
     sortData(data);
 
     let h = '<div class="min-w-[600px]">';
-    // SEM CABEÇALHO AQUI (já está no HTML fixo)
     
     data.forEach((t, idx) => {
         const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50';
@@ -300,6 +330,7 @@ function renderExtratoTable(data) {
     el.innerHTML = h + '</div>';
 }
 
+// --- MODAL SEGURO ---
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
@@ -330,11 +361,13 @@ document.getElementById('fab-add').onclick = () => {
     const today=new Date().toISOString().split('T')[0]; 
     const elDate=document.getElementById('input-date'); if(elDate) elDate.value=today;
     if(inputAmount)inputAmount.value="";
+    
     document.getElementById('div-period-count').classList.add('hidden');
     document.getElementById('div-frequency').classList.add('hidden');
     document.getElementById('div-custom-days').classList.add('hidden');
     if(statusText) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
     if(btnDelete) btnDelete.classList.add('hidden');
+    
     modal.classList.remove('hidden'); modal.classList.add('flex');
 };
 document.getElementById('close-modal').onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
@@ -393,8 +426,10 @@ window.editTransaction = (id) => {
         if(pb.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
         else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
     }
-    document.getElementById('div-period-count').classList.add('hidden');
-    document.getElementById('div-frequency').classList.add('hidden');
+    const dpc = document.getElementById('div-period-count');
+    const df = document.getElementById('div-frequency');
+    if(dpc) dpc.classList.add('hidden');
+    if(df) df.classList.add('hidden');
     document.getElementById('input-recurrence').value='single';
     if(btnDelete){btnDelete.classList.remove('hidden'); btnDelete.onclick=()=>deleteTransaction(id);}
     modal.classList.remove('hidden'); modal.classList.add('flex');

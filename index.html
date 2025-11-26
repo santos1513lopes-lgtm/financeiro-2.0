@@ -61,12 +61,18 @@
                     </div>
                     <div id="avatar-display" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-slate-600 hover:ring-blue-400 transition cursor-pointer">?</div>
                 </button>
+                
                 <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-64 bg-white dark:bg-darkcard rounded-xl shadow-2xl py-2 border border-slate-100 dark:border-gray-700 z-50 transform origin-top-right transition-all">
                     <div class="px-4 py-3 border-b dark:border-gray-700">
                         <p class="text-xs text-slate-500 dark:text-slate-400">Logado como:</p>
                         <p id="user-email-display" class="text-sm font-bold text-slate-800 dark:text-white truncate">...</p>
                     </div>
-                    <button id="btn-logout-dropdown" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold">
+                    
+                    <button id="btn-wipe-data" class="w-full text-left px-4 py-2 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium border-b dark:border-gray-700">
+                        <i class="fas fa-eraser mr-2"></i> Zerar Dados
+                    </button>
+
+                    <button id="btn-logout-dropdown" class="w-full text-left px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">
                         <i class="fas fa-sign-out-alt mr-2"></i> Sair
                     </button>
                 </div>
@@ -110,30 +116,16 @@
 
                 <section id="tab-dashboard" class="tab-content">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Faturamento</div>
-                            <div id="dash-receitas" class="text-2xl font-bold text-green-600">R$ 0,00</div>
-                        </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div>
-                            <div id="dash-despesas" class="text-2xl font-bold text-red-600">R$ 0,00</div>
-                        </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Resultado</div>
-                            <div id="dash-saldo" class="text-2xl font-bold text-blue-600">R$ 0,00</div>
-                        </div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Faturamento</div><div id="dash-receitas" class="text-2xl font-bold text-green-600">R$ 0,00</div></div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div><div id="dash-despesas" class="text-2xl font-bold text-red-600">R$ 0,00</div></div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Resultado</div><div id="dash-saldo" class="text-2xl font-bold text-blue-600">R$ 0,00</div></div>
                     </div>
-                    <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm mb-6 border border-slate-100 dark:border-gray-700">
-                        <div class="h-64 relative w-full flex justify-center"><canvas id="expenseChart"></canvas></div>
-                    </div>
+                    <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm mb-6 border border-slate-100 dark:border-gray-700"><div class="h-64 relative w-full flex justify-center"><canvas id="expenseChart"></canvas></div></div>
                 </section>
 
                 <section id="tab-transacoes" class="tab-content hidden h-full">
                     <div class="flex flex-col">
-                        <div class="mb-4">
-                            <input id="search-trans" placeholder="🔍 Pesquisar..." class="w-full p-3 rounded-xl bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 shadow-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500" />
-                        </div>
-
+                        <div class="mb-4"><input id="search-trans" placeholder="🔍 Pesquisar..." class="w-full p-3 rounded-xl bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 shadow-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
                         <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 sticky top-0 z-10 border-b border-slate-300 dark:border-slate-700">
                             <div class="col-span-2 cursor-pointer hover:text-blue-600" onclick="toggleSort('date')">Data <i class="fas fa-sort ml-1"></i></div>
                             <div class="col-span-4 cursor-pointer hover:text-blue-600" onclick="toggleSort('description')">Descrição <i class="fas fa-sort ml-1"></i></div>
@@ -142,27 +134,21 @@
                             <div class="col-span-1 text-center">Status</div>
                             <div class="col-span-1 text-center">Ação</div>
                         </div>
-
                         <div id="transaction-list" class="space-y-2 md:space-y-0 md:bg-white md:dark:bg-darkcard md:rounded-b-lg md:shadow-sm"></div>
                     </div>
                 </section>
                 
                  <section id="tab-futuras" class="tab-content hidden">
                     <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-4 flex justify-between items-center border border-indigo-100 dark:border-indigo-800">
-                        <div>
-                            <div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Fluxo Previsto</div>
-                            <div id="future-balance" class="text-xl font-bold text-slate-700 dark:text-slate-200">R$ ...</div>
-                        </div>
+                        <div><div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Fluxo Previsto</div><div id="future-balance" class="text-xl font-bold text-slate-700 dark:text-slate-200">R$ ...</div></div>
                         <i class="fas fa-wallet text-2xl text-indigo-500"></i>
                     </div>
-                    
                     <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 border-b border-slate-300 dark:border-slate-700">
                         <div class="col-span-2 cursor-pointer hover:text-blue-600" onclick="toggleSort('date')">Vencimento <i class="fas fa-sort ml-1"></i></div>
                         <div class="col-span-5 cursor-pointer hover:text-blue-600" onclick="toggleSort('description')">Descrição <i class="fas fa-sort ml-1"></i></div>
                         <div class="col-span-3 text-right cursor-pointer hover:text-blue-600" onclick="toggleSort('amount')">Valor Previsto <i class="fas fa-sort ml-1"></i></div>
                         <div class="col-span-2 text-center">Ação</div>
                     </div>
-
                     <div id="future-list" class="space-y-2 md:space-y-0 md:bg-white md:dark:bg-darkcard md:rounded-b-lg md:shadow-sm"></div>
                 </section>
 
@@ -174,16 +160,13 @@
                             <button id="btn-download-csv" class="bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-bold shadow-md transition text-sm"><i class="fas fa-file-csv mr-2"></i>CSV</button>
                         </div>
                     </div>
-                    
                     <div id="report-preview" class="bg-white dark:bg-darkcard rounded-xl p-4 overflow-x-auto border dark:border-gray-700"></div>
                 </section>
             </div>
         </div>
     </div>
 
-    <button id="fab-add" class="fixed right-6 bottom-24 md:bottom-10 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 transition-transform active:scale-90 border-4 border-white dark:border-slate-800">
-        <i class="fas fa-plus"></i>
-    </button>
+    <button id="fab-add" class="fixed right-6 bottom-24 md:bottom-10 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 transition-transform active:scale-90 border-4 border-white dark:border-slate-800"><i class="fas fa-plus"></i></button>
 
     <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-darkcard border-t dark:border-gray-700 flex justify-around py-3 md:hidden z-50 safe-area-bottom shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
         <button class="nav-item active" data-tab="dashboard"><i class="fas fa-chart-pie text-xl mb-1"></i><span class="text-[10px]">Painel</span></button>
@@ -195,68 +178,24 @@
     <div id="modal-transaction" class="fixed inset-0 z-[60] hidden items-end md:items-center justify-center">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-overlay"></div>
         <div class="relative w-full md:w-[600px] h-[90vh] md:h-auto bg-white dark:bg-darkcard rounded-t-3xl md:rounded-2xl p-6 shadow-2xl animate-slide-up md:animate-none flex flex-col z-10">
-            <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-3">
-                <h3 class="text-xl font-bold dark:text-white"><i class="fas fa-edit mr-2 text-blue-500"></i>Transação</h3>
-                <button id="close-modal" class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center dark:text-white hover:bg-red-100 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
-            </div>
+            <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-3"><h3 class="text-xl font-bold dark:text-white"><i class="fas fa-edit mr-2 text-blue-500"></i>Transação</h3><button id="close-modal" class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center dark:text-white hover:bg-red-100 hover:text-red-500 transition"><i class="fas fa-times"></i></button></div>
             <form id="form-transaction" class="flex-1 overflow-y-auto pb-20 custom-scrollbar">
                 <input type="hidden" id="tx-id">
+                <div class="mb-5"><label class="text-xs text-gray-500 font-bold uppercase ml-1">Valor</label><div class="relative mt-1"><span class="absolute left-3 top-3 text-gray-500 font-bold text-lg">R$</span><input id="input-amount" type="tel" inputmode="numeric" placeholder="0,00" required class="w-full text-3xl font-bold bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 outline-none pl-10 py-3 text-slate-800 dark:text-white" /></div></div>
                 
-                <div class="mb-5">
-                    <label class="text-xs text-gray-500 font-bold uppercase ml-1">Valor</label>
-                    <div class="relative mt-1">
-                        <span class="absolute left-3 top-3 text-gray-500 font-bold text-lg">R$</span>
-                        <input id="input-amount" type="tel" inputmode="numeric" placeholder="0,00" required class="w-full text-3xl font-bold bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 outline-none pl-10 py-3 text-slate-800 dark:text-white" />
-                    </div>
-                </div>
-
                 <div class="bg-slate-100 dark:bg-slate-700/50 p-1.5 rounded-xl flex mb-4 ring-1 ring-slate-200 dark:ring-slate-600">
-                    <label class="flex-1 cursor-pointer relative">
-                        <input type="radio" name="type" value="saida" class="peer hidden" checked>
-                        <div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-red-400 dark:peer-checked:ring-1 dark:peer-checked:ring-red-500/50">
-                            <i class="fas fa-arrow-down mr-2"></i>Saída
-                        </div>
-                    </label>
-                    <label class="flex-1 cursor-pointer relative ml-1">
-                        <input type="radio" name="type" value="entrada" class="peer hidden">
-                        <div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-green-400 dark:peer-checked:ring-1 dark:peer-checked:ring-green-500/50">
-                            <i class="fas fa-arrow-up mr-2"></i>Entrada
-                        </div>
-                    </label>
+                    <label class="flex-1 cursor-pointer relative"><input type="radio" name="type" value="saida" class="peer hidden" checked><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-red-400 dark:peer-checked:ring-1 dark:peer-checked:ring-red-500/50"><i class="fas fa-arrow-down mr-2"></i>Saída</div></label>
+                    <label class="flex-1 cursor-pointer relative ml-1"><input type="radio" name="type" value="entrada" class="peer hidden"><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-green-400 dark:peer-checked:ring-1 dark:peer-checked:ring-green-500/50"><i class="fas fa-arrow-up mr-2"></i>Entrada</div></label>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div><label class="text-xs font-bold text-gray-500">Data</label><input type="date" id="input-date" required class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white"></div>
-                    <div><label class="text-xs font-bold text-gray-500">Categoria</label><select id="input-category" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none bg-white dark:bg-gray-800 dark:text-white"></select></div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-500">Descrição</label>
-                    <input id="input-desc" placeholder="Ex: Fornecedor ABC" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white">
-                </div>
-                
+                <div class="grid grid-cols-2 gap-4 mb-4"><div><label class="text-xs font-bold text-gray-500">Data</label><input type="date" id="input-date" required class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white"></div><div><label class="text-xs font-bold text-gray-500">Categoria</label><select id="input-category" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none bg-white dark:bg-gray-800 dark:text-white"></select></div></div>
+                <div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input id="input-desc" placeholder="Ex: Fornecedor ABC" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white"></div>
                 <div class="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700 mb-6">
-                    <div class="grid grid-cols-2 gap-4 mb-3">
-                        <div><label class="text-xs font-bold text-gray-500">Repetição</label><select id="input-recurrence" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="single">Única</option><option value="installment">Parcelado</option><option value="fixed">Fixo</option></select></div>
-                        <div id="div-period-count" class="hidden"><label class="text-xs font-bold text-gray-500">Qtd.</label><input type="number" id="input-installments" value="2" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div>
-                    </div>
-                    <div id="div-frequency" class="hidden border-t dark:border-gray-600 pt-3 mt-2">
-                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-xs font-bold text-gray-500">Frequência</label><select id="input-frequency" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="monthly">Mensal</option><option value="biweekly">Quinzenal</option><option value="custom">Personalizado</option></select></div>
-                            <div id="div-custom-days" class="hidden"><label class="text-xs font-bold text-gray-500">Dias</label><input type="number" id="input-custom-days" value="10" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div>
-                         </div>
-                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Repetição</label><select id="input-recurrence" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="single">Única</option><option value="installment">Parcelado</option><option value="fixed">Fixo</option></select></div><div id="div-period-count" class="hidden"><label class="text-xs font-bold text-gray-500">Qtd.</label><input type="number" id="input-installments" value="2" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div>
+                    <div id="div-frequency" class="hidden border-t dark:border-gray-600 pt-3 mt-2"><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-bold text-gray-500">Frequência</label><select id="input-frequency" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="monthly">Mensal</option><option value="biweekly">Quinzenal</option><option value="custom">Personalizado</option></select></div><div id="div-custom-days" class="hidden"><label class="text-xs font-bold text-gray-500">Dias</label><input type="number" id="input-custom-days" value="10" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div></div>
                 </div>
-
-                <div class="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-blue-900/20 p-3 rounded-lg border border-slate-200 dark:border-blue-800">
-                    <input id="input-paid" type="checkbox" checked class="w-5 h-5 text-blue-600 rounded">
-                    <label for="input-paid" class="text-sm font-bold text-gray-700 dark:text-gray-300">Status: <span id="status-text" class="text-green-600">Concluído</span></label>
-                </div>
-
-                <div class="flex gap-3">
-                    <button type="button" id="btn-delete" class="hidden flex-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold py-4 rounded-xl transition">Excluir</button>
-                    <button type="submit" id="btn-save" class="flex-[3] bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition">Salvar</button>
-                </div>
+                <div class="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-blue-900/20 p-3 rounded-lg border border-slate-200 dark:border-blue-800"><input id="input-paid" type="checkbox" checked class="w-5 h-5 text-blue-600 rounded"><label for="input-paid" class="text-sm font-bold text-gray-700 dark:text-gray-300">Status: <span id="status-text" class="text-green-600">Concluído</span></label></div>
+                <div class="flex gap-3"><button type="button" id="btn-delete" class="hidden flex-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold py-4 rounded-xl transition">Excluir</button><button type="submit" id="btn-save" class="flex-[3] bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition">Salvar</button></div>
             </form>
         </div>
     </div>
