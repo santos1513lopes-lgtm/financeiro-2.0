@@ -39,10 +39,15 @@ onAuthStateChanged(auth, (user) => {
         }
         
         const email = user.email;
-        document.getElementById('user-email-display').innerText = email;
-        document.getElementById('user-name-display').innerText = "Olá, " + email.split('@')[0];
-        document.getElementById('avatar-display').innerText = email.charAt(0).toUpperCase();
-        document.getElementById('btn-profile-mobile').innerText = email.charAt(0).toUpperCase();
+        const elEmail = document.getElementById('user-email-display');
+        const elName = document.getElementById('user-name-display');
+        const elAvatar = document.getElementById('avatar-display');
+        const elMobProfile = document.getElementById('btn-profile-mobile');
+
+        if(elEmail) elEmail.innerText = email;
+        if(elName) elName.innerText = "Olá, " + email.split('@')[0];
+        if(elAvatar) elAvatar.innerText = email.charAt(0).toUpperCase();
+        if(elMobProfile) elMobProfile.innerText = email.charAt(0).toUpperCase();
 
         initApp();
     } else {
@@ -56,28 +61,21 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- MODO PRIVACIDADE (OLHO) ---
+// --- MODO PRIVACIDADE ---
 const toggleValues = () => {
     valuesVisible = !valuesVisible;
     const elements = document.querySelectorAll('.value-blur');
     const icons = [document.getElementById('btn-toggle-values-desktop'), document.getElementById('btn-toggle-values-mobile')];
-    
     elements.forEach(el => {
-        if(valuesVisible) {
-            el.classList.remove('blur-sm', 'select-none');
-        } else {
-            el.classList.add('blur-sm', 'select-none');
-        }
+        if(valuesVisible) el.classList.remove('blur-sm', 'select-none');
+        else el.classList.add('blur-sm', 'select-none');
     });
-
     icons.forEach(btn => {
         if(btn) btn.innerHTML = valuesVisible ? '<i class="fas fa-eye text-lg"></i>' : '<i class="fas fa-eye-slash text-lg"></i>';
     });
 };
-
 if(document.getElementById('btn-toggle-values-desktop')) document.getElementById('btn-toggle-values-desktop').onclick = toggleValues;
 if(document.getElementById('btn-toggle-values-mobile')) document.getElementById('btn-toggle-values-mobile').onclick = toggleValues;
-
 
 // Dropdown e Zerar Dados
 const btnProfile = document.getElementById('btn-profile-desktop');
@@ -90,7 +88,7 @@ if(btnProfile && dropdown) {
 const btnWipe = document.getElementById('btn-wipe-data');
 if(btnWipe) {
     btnWipe.onclick = async () => {
-        if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. O saldo voltará a zero. Deseja continuar?")) {
+        if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. Deseja continuar?")) {
             const confirm2 = prompt("Digite a palavra ZERAR para confirmar:");
             if(confirm2 === "ZERAR") {
                 try {
@@ -98,11 +96,8 @@ if(btnWipe) {
                     const snapshot = await getDocs(q);
                     const promises = snapshot.docs.map(d => deleteDoc(d.ref));
                     await Promise.all(promises);
-                    alert("Todos os dados foram apagados com sucesso.");
-                    window.location.reload();
-                } catch(err) {
-                    alert("Erro ao apagar dados: " + err.message);
-                }
+                    alert("Dados apagados."); window.location.reload();
+                } catch(err) { alert("Erro: " + err.message); }
             }
         }
     };
@@ -110,7 +105,7 @@ if(btnWipe) {
 
 const logout = () => { if(confirm("Sair do sistema?")) signOut(auth); };
 if(document.getElementById('btn-logout-dropdown')) document.getElementById('btn-logout-dropdown').onclick = logout;
-if(document.getElementById('btn-user-menu-mobile')) document.getElementById('btn-user-menu-mobile').onclick = logout; // Agora perfil mobile faz logout? Ou abre menu? No HTML acima não tem menu mobile, então assume-se logout ou nada. Vou manter logout por segurança.
+if(document.getElementById('btn-user-menu-mobile')) document.getElementById('btn-user-menu-mobile').onclick = logout;
 
 document.getElementById('btn-login').onclick = async () => {
     const email = document.getElementById('email').value;
@@ -120,7 +115,6 @@ document.getElementById('btn-login').onclick = async () => {
     catch (error) { document.getElementById('auth-msg').textContent = "Acesso negado."; }
 };
 
-// --- TEMA ---
 const htmlEl = document.documentElement;
 const themeBtns = [document.getElementById('btn-theme-mobile'), document.getElementById('btn-theme-desktop')];
 function applyTheme(isDark) {
@@ -131,7 +125,6 @@ if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') 
 else applyTheme(false);
 themeBtns.forEach(b => b.onclick = () => applyTheme(!htmlEl.classList.contains('dark')));
 
-// --- NAVEGAÇÃO ---
 function switchTab(tabName) {
     Object.values(views).forEach(el => { if(el) el.classList.add('hidden'); });
     if(views[tabName]) views[tabName].classList.remove('hidden');
@@ -151,7 +144,6 @@ function switchTab(tabName) {
 }
 document.querySelectorAll('.nav-item, .nav-desktop').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
-// --- APP LOGIC ---
 async function initApp() {
     const today = new Date().toISOString().slice(0, 7);
     const deskDate = document.getElementById('global-month');
@@ -169,8 +161,10 @@ async function initApp() {
 
 const syncDate = (e) => {
     const v = e.target.value;
-    document.getElementById('global-month').value = v;
-    if(document.getElementById('global-month-mobile')) document.getElementById('global-month-mobile').value = v;
+    const desk = document.getElementById('global-month');
+    const mob = document.getElementById('global-month-mobile');
+    if(desk) desk.value = v;
+    if(mob) mob.value = v;
     updateInterface();
 };
 if(document.getElementById('global-month')) document.getElementById('global-month').addEventListener('change', syncDate);
@@ -185,24 +179,26 @@ function updateInterface() {
     const data = getCurrentMonthData();
     const rec = data.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
     const desp = data.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
-    document.getElementById('dash-receitas').innerText = fmtMoney(rec);
-    document.getElementById('dash-despesas').innerText = fmtMoney(desp);
-    document.getElementById('dash-saldo').innerText = fmtMoney(rec - desp);
+    
+    const elRec = document.getElementById('dash-receitas');
+    const elDesp = document.getElementById('dash-despesas');
+    const elSaldo = document.getElementById('dash-saldo');
+
+    if(elRec) elRec.innerText = fmtMoney(rec);
+    if(elDesp) elDesp.innerText = fmtMoney(desp);
+    if(elSaldo) elSaldo.innerText = fmtMoney(rec - desp);
     
     const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
     renderTransactionList(filterData(data, term));
     
     renderFutureList(); 
-    renderRecentList(data); // Nova Função
+    renderRecentList(data);
     renderChart(data);
     
     const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
     renderExtratoTable(filterData(data, termRep));
     
-    // Reaplica blur se necessário após atualização
-    if(!valuesVisible) {
-        document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none'));
-    }
+    if(!valuesVisible) { document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none')); }
 }
 
 function filterData(data, term) {
@@ -216,7 +212,6 @@ function filterData(data, term) {
 if(document.getElementById('search-trans')) document.getElementById('search-trans').addEventListener('input', (e) => renderTransactionList(filterData(getCurrentMonthData(), e.target.value.toLowerCase())));
 if(document.getElementById('search-report')) document.getElementById('search-report').addEventListener('input', (e) => renderExtratoTable(filterData(getCurrentMonthData(), e.target.value.toLowerCase())));
 
-// --- ORDENAÇÃO ---
 window.toggleSort = (col) => {
     if (sortConfig.column === col) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
     else { sortConfig.column = col; sortConfig.direction = 'asc'; }
@@ -268,36 +263,28 @@ if(document.getElementById('btn-download-csv')) document.getElementById('btn-dow
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
 };
 
-// RENDER LISTA RECENTE (DASHBOARD)
+// RENDER RECENTES
 function renderRecentList(data) {
     const el = document.getElementById('recent-transactions-list');
     if(!el) return;
     el.innerHTML = '';
-    
-    // Copia e ordena por data decrescente
     const recent = [...data].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-    
     if(recent.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Sem movimentações.</div>'; return; }
-    
     recent.forEach(t => {
         const isExp = t.type === 'saida';
         const color = isExp ? 'text-red-600' : 'text-green-600';
         const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
         const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
-        
         el.innerHTML += `
             <div class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition">
                 <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
-                <div class="flex-1 min-w-0">
-                    <div class="font-bold text-slate-700 dark:text-gray-200 text-sm truncate">${t.description}</div>
-                    <div class="text-xs text-gray-400">${fmtDate(t.date)}</div>
-                </div>
+                <div class="flex-1 min-w-0"><div class="font-bold text-slate-700 dark:text-gray-200 text-sm truncate">${t.description}</div><div class="text-xs text-gray-400">${fmtDate(t.date)}</div></div>
                 <div class="font-bold ${color} text-sm value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
             </div>`;
     });
 }
 
-// RENDER (Lista Principal)
+// RENDER LISTA PRINCIPAL
 function renderTransactionList(data) {
     const el = document.getElementById('transaction-list');
     if(!el) return;
@@ -326,7 +313,7 @@ function renderTransactionList(data) {
     });
 }
 
-// RENDER (Contas Futuras)
+// RENDER FUTURAS (COM ALERTA VISUAL)
 function renderFutureList() {
     const today = new Date().toISOString().split('T')[0];
     const pending = transactions.filter(t => t.status === 'pendente');
@@ -349,16 +336,33 @@ function renderFutureList() {
         const color = isExp ? 'text-red-600' : 'text-green-600';
         const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
         const bgIcon = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
-        const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50';
+        
+        // Destaque para contas atrasadas
+        const rowBg = isLate 
+            ? 'bg-red-50 dark:bg-red-900/10 border-l-4 border-l-red-500' 
+            : (idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50');
+            
+        const dateClass = isLate 
+            ? 'text-red-600 font-bold animate-pulse' 
+            : 'text-slate-600 dark:text-gray-300';
+            
+        const warningIcon = isLate ? '<i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>' : '';
 
         el.innerHTML += `
             <div class="group ${rowBg} p-3 border-b border-slate-100 dark:border-gray-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-8 h-8 rounded-full ${bgIcon} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
-                    <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-500 font-bold':'text-gray-400'}">${isLate?'VENCIDA':fmtDate(t.date)}</div></div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span>
+                        <div class="text-xs ${isLate?'text-red-600 font-bold':'text-gray-400'}">
+                            ${warningIcon} ${isLate ? 'VENCIDO: ' : ''}${fmtDate(t.date)}
+                        </div>
+                    </div>
                     <div class="text-right"><div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
                 </div>
-                <div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono ${isLate?'text-red-500 font-bold':''}">${fmtDate(t.date)}</div>
+                <div class="hidden md:block text-sm col-span-2 font-mono ${dateClass}">
+                    ${warningIcon} ${fmtDate(t.date)}
+                </div>
                 <div class="hidden md:block text-sm font-medium text-slate-800 dark:text-gray-100 col-span-5 truncate">${t.description}</div>
                 <div class="hidden md:block text-sm font-bold text-right col-span-3 ${color} value-blur">${fmtMoney(t.amount)}</div>
                 <div class="hidden md:flex justify-center col-span-2">
@@ -368,16 +372,13 @@ function renderFutureList() {
     });
 }
 
-// RENDER (Extrato Relatórios)
+// RENDER (Extrato)
 function renderExtratoTable(data) {
     const el = document.getElementById('report-preview');
     if(!el) return;
     if(data.length===0) { el.innerHTML='<div class="text-center p-4 text-gray-400">Sem dados</div>'; return; }
-    
     sortData(data);
-
     let h = '<div class="min-w-[600px]">';
-    
     data.forEach((t, idx) => {
         const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50';
         h += `<div class="grid grid-cols-12 gap-4 p-3 ${rowBg} border-b border-slate-100 dark:border-gray-700 items-center">
@@ -389,7 +390,7 @@ function renderExtratoTable(data) {
     el.innerHTML = h + '</div>';
 }
 
-// --- MODAL SEGURO ---
+// ... (Mantém resto do modal igual, sem alterações necessárias) ...
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
@@ -420,13 +421,11 @@ document.getElementById('fab-add').onclick = () => {
     const today=new Date().toISOString().split('T')[0]; 
     const elDate=document.getElementById('input-date'); if(elDate) elDate.value=today;
     if(inputAmount)inputAmount.value="";
-    
     document.getElementById('div-period-count').classList.add('hidden');
     document.getElementById('div-frequency').classList.add('hidden');
     document.getElementById('div-custom-days').classList.add('hidden');
     if(statusText) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
     if(btnDelete) btnDelete.classList.add('hidden');
-    
     modal.classList.remove('hidden'); modal.classList.add('flex');
 };
 document.getElementById('close-modal').onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
@@ -478,12 +477,11 @@ window.editTransaction = (id) => {
     document.getElementById('input-desc').value=t.description;
     document.getElementById('input-date').value=t.date;
     document.getElementById('input-category').value=t.category;
-    const rt = document.querySelector(`input[name="type"][value="${t.type}"]`);
-    if(rt) rt.checked = true;
-    const paidBox = document.getElementById('input-paid');
-    paidBox.checked = (t.status === 'efetivado');
+    document.querySelector(`input[name="type"][value="${t.type}"]`).checked=true;
+    const pb=document.getElementById('input-paid');
+    pb.checked=(t.status==='efetivado');
     if(statusText) {
-        if(paidBox.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
+        if(pb.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
         else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
     }
     document.getElementById('div-period-count').classList.add('hidden');
