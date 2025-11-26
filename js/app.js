@@ -33,10 +33,15 @@ onAuthStateChanged(auth, (user) => {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-content').classList.remove('hidden');
-        if(document.getElementById('top-controls')) {
-            document.getElementById('top-controls').classList.remove('hidden');
-            document.getElementById('top-controls').classList.add('md:flex');
+        
+        // --- CORREÇÃO DA BARRA DE TOPO (MOBILE FIX) ---
+        const topControls = document.getElementById('top-controls');
+        if(topControls) {
+            // Mantém 'hidden' para o mobile, mas ativa 'md:flex' para o desktop
+            topControls.classList.add('hidden'); 
+            topControls.classList.add('md:flex'); 
         }
+        // ---------------------------------------------
         
         const email = user.email;
         const elEmail = document.getElementById('user-email-display');
@@ -54,9 +59,12 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('app-content').classList.add('hidden');
-        if(document.getElementById('top-controls')) {
-            document.getElementById('top-controls').classList.add('hidden');
-            document.getElementById('top-controls').classList.remove('md:flex');
+        
+        const topControls = document.getElementById('top-controls');
+        if(topControls) {
+            // Se deslogar, esconde em tudo
+            topControls.classList.add('hidden');
+            topControls.classList.remove('md:flex');
         }
     }
 });
@@ -313,7 +321,7 @@ function renderTransactionList(data) {
     });
 }
 
-// RENDER FUTURAS (COM ALERTA VISUAL)
+// RENDER (Contas Futuras)
 function renderFutureList() {
     const today = new Date().toISOString().split('T')[0];
     const pending = transactions.filter(t => t.status === 'pendente');
@@ -337,42 +345,28 @@ function renderFutureList() {
         const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
         const bgIcon = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
         
-        // Destaque para contas atrasadas
         const rowBg = isLate 
             ? 'bg-red-50 dark:bg-red-900/10 border-l-4 border-l-red-500' 
             : (idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50');
-            
-        const dateClass = isLate 
-            ? 'text-red-600 font-bold animate-pulse' 
-            : 'text-slate-600 dark:text-gray-300';
-            
+        const dateClass = isLate ? 'text-red-600 font-bold animate-pulse' : 'text-slate-600 dark:text-gray-300';
         const warningIcon = isLate ? '<i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>' : '';
 
         el.innerHTML += `
             <div class="group ${rowBg} p-3 border-b border-slate-100 dark:border-gray-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-8 h-8 rounded-full ${bgIcon} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
-                    <div class="flex flex-col">
-                        <span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span>
-                        <div class="text-xs ${isLate?'text-red-600 font-bold':'text-gray-400'}">
-                            ${warningIcon} ${isLate ? 'VENCIDO: ' : ''}${fmtDate(t.date)}
-                        </div>
-                    </div>
+                    <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-600 font-bold':'text-gray-400'}">${warningIcon} ${isLate?'VENCIDO: ':''}${fmtDate(t.date)}</div></div>
                     <div class="text-right"><div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
                 </div>
-                <div class="hidden md:block text-sm col-span-2 font-mono ${dateClass}">
-                    ${warningIcon} ${fmtDate(t.date)}
-                </div>
+                <div class="hidden md:block text-sm col-span-2 font-mono ${dateClass}">${warningIcon} ${fmtDate(t.date)}</div>
                 <div class="hidden md:block text-sm font-medium text-slate-800 dark:text-gray-100 col-span-5 truncate">${t.description}</div>
                 <div class="hidden md:block text-sm font-bold text-right col-span-3 ${color} value-blur">${fmtMoney(t.amount)}</div>
-                <div class="hidden md:flex justify-center col-span-2">
-                    <button onclick="payTransaction('${t.id}')" class="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-bold px-3 py-1 rounded transition">Baixar</button>
-                </div>
+                <div class="hidden md:flex justify-center col-span-2"><button onclick="payTransaction('${t.id}')" class="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-bold px-3 py-1 rounded transition">Baixar</button></div>
             </div>`;
     });
 }
 
-// RENDER (Extrato)
+// RENDER (Extrato Relatórios)
 function renderExtratoTable(data) {
     const el = document.getElementById('report-preview');
     if(!el) return;
@@ -390,7 +384,7 @@ function renderExtratoTable(data) {
     el.innerHTML = h + '</div>';
 }
 
-// ... (Mantém resto do modal igual, sem alterações necessárias) ...
+// --- MODAL SEGURO ---
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
@@ -477,11 +471,12 @@ window.editTransaction = (id) => {
     document.getElementById('input-desc').value=t.description;
     document.getElementById('input-date').value=t.date;
     document.getElementById('input-category').value=t.category;
-    document.querySelector(`input[name="type"][value="${t.type}"]`).checked=true;
-    const pb=document.getElementById('input-paid');
-    pb.checked=(t.status==='efetivado');
+    const rt = document.querySelector(`input[name="type"][value="${t.type}"]`);
+    if(rt) rt.checked = true;
+    const paidBox = document.getElementById('input-paid');
+    paidBox.checked = (t.status === 'efetivado');
     if(statusText) {
-        if(pb.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
+        if(paidBox.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
         else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
     }
     document.getElementById('div-period-count').classList.add('hidden');
