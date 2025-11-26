@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.jsl.gestaopro",
+        "sha256_cert_fingerprints": ["62:EF:A1:B8:ED:E6:1F:E9:D1:C3:C4:4A:99:BB:9B:7A:B5:6C:A4:07:9D:74:13:42:AC:F6:A9:3F:FD:A4:81:72"]
+      }
+    }]
