@@ -34,22 +34,24 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-content').classList.remove('hidden');
         
-        // --- CORREÇÃO DA BARRA DE TOPO (MOBILE FIX) ---
+        // CORREÇÃO BARRA DUPLICADA NO MOBILE
         const topControls = document.getElementById('top-controls');
         if(topControls) {
-            // Mantém 'hidden' para o mobile, mas ativa 'md:flex' para o desktop
-            topControls.classList.add('hidden'); 
-            topControls.classList.add('md:flex'); 
+            // Garante que começa escondida
+            topControls.classList.remove('hidden');
+            // Adiciona classes específicas: Flex no Desktop, Hidden no Mobile
+            topControls.classList.add('hidden', 'md:flex');
         }
-        // ---------------------------------------------
         
         const email = user.email;
         const elEmail = document.getElementById('user-email-display');
+        const elEmailMob = document.getElementById('user-email-mobile');
         const elName = document.getElementById('user-name-display');
         const elAvatar = document.getElementById('avatar-display');
         const elMobProfile = document.getElementById('btn-profile-mobile');
 
         if(elEmail) elEmail.innerText = email;
+        if(elEmailMob) elEmailMob.innerText = email;
         if(elName) elName.innerText = "Olá, " + email.split('@')[0];
         if(elAvatar) elAvatar.innerText = email.charAt(0).toUpperCase();
         if(elMobProfile) elMobProfile.innerText = email.charAt(0).toUpperCase();
@@ -59,13 +61,8 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('app-content').classList.add('hidden');
-        
         const topControls = document.getElementById('top-controls');
-        if(topControls) {
-            // Se deslogar, esconde em tudo
-            topControls.classList.add('hidden');
-            topControls.classList.remove('md:flex');
-        }
+        if(topControls) topControls.classList.add('hidden');
     }
 });
 
@@ -85,35 +82,59 @@ const toggleValues = () => {
 if(document.getElementById('btn-toggle-values-desktop')) document.getElementById('btn-toggle-values-desktop').onclick = toggleValues;
 if(document.getElementById('btn-toggle-values-mobile')) document.getElementById('btn-toggle-values-mobile').onclick = toggleValues;
 
-// Dropdown e Zerar Dados
-const btnProfile = document.getElementById('btn-profile-desktop');
-const dropdown = document.getElementById('profile-dropdown');
-if(btnProfile && dropdown) {
-    btnProfile.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); };
-    window.addEventListener('click', (e) => { if (!btnProfile.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
+// Lógica Dropdown Mobile
+const btnMobProfile = document.getElementById('btn-profile-mobile');
+const dropMob = document.getElementById('mobile-profile-dropdown');
+if(btnMobProfile && dropMob) {
+    btnMobProfile.onclick = (e) => {
+        e.stopPropagation();
+        dropMob.classList.toggle('hidden');
+    };
+    window.addEventListener('click', (e) => {
+        if (!btnMobProfile.contains(e.target) && !dropMob.contains(e.target)) {
+            dropMob.classList.add('hidden');
+        }
+    });
 }
 
-const btnWipe = document.getElementById('btn-wipe-data');
-if(btnWipe) {
-    btnWipe.onclick = async () => {
-        if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. Deseja continuar?")) {
-            const confirm2 = prompt("Digite a palavra ZERAR para confirmar:");
-            if(confirm2 === "ZERAR") {
-                try {
-                    const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
-                    const snapshot = await getDocs(q);
-                    const promises = snapshot.docs.map(d => deleteDoc(d.ref));
-                    await Promise.all(promises);
-                    alert("Dados apagados."); window.location.reload();
-                } catch(err) { alert("Erro: " + err.message); }
-            }
-        }
+// Lógica Dropdown Desktop
+const btnDeskProfile = document.getElementById('btn-profile-desktop');
+const dropDesk = document.getElementById('profile-dropdown');
+if(btnDeskProfile && dropDesk) {
+    btnDeskProfile.onclick = (e) => {
+        e.stopPropagation();
+        dropDesk.classList.toggle('hidden');
     };
+    window.addEventListener('click', (e) => {
+        if (!btnDeskProfile.contains(e.target) && !dropDesk.contains(e.target)) {
+            dropDesk.classList.add('hidden');
+        }
+    });
 }
+
+// Zerar Dados
+const wipeData = async () => {
+    if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. Deseja continuar?")) {
+        const confirm2 = prompt("Digite a palavra ZERAR para confirmar:");
+        if(confirm2 === "ZERAR") {
+            try {
+                const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
+                const snapshot = await getDocs(q);
+                const promises = snapshot.docs.map(d => deleteDoc(d.ref));
+                await Promise.all(promises);
+                alert("Dados apagados."); window.location.reload();
+            } catch(err) { alert("Erro: " + err.message); }
+        }
+    }
+};
+const btnWipeDesk = document.getElementById('btn-wipe-data');
+if(btnWipeDesk) btnWipeDesk.onclick = wipeData;
+const btnWipeMob = document.getElementById('btn-wipe-data-mobile');
+if(btnWipeMob) btnWipeMob.onclick = wipeData;
 
 const logout = () => { if(confirm("Sair do sistema?")) signOut(auth); };
 if(document.getElementById('btn-logout-dropdown')) document.getElementById('btn-logout-dropdown').onclick = logout;
-if(document.getElementById('btn-user-menu-mobile')) document.getElementById('btn-user-menu-mobile').onclick = logout;
+if(document.getElementById('btn-logout-mobile')) document.getElementById('btn-logout-mobile').onclick = logout;
 
 document.getElementById('btn-login').onclick = async () => {
     const email = document.getElementById('email').value;
@@ -187,14 +208,9 @@ function updateInterface() {
     const data = getCurrentMonthData();
     const rec = data.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
     const desp = data.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
-    
-    const elRec = document.getElementById('dash-receitas');
-    const elDesp = document.getElementById('dash-despesas');
-    const elSaldo = document.getElementById('dash-saldo');
-
-    if(elRec) elRec.innerText = fmtMoney(rec);
-    if(elDesp) elDesp.innerText = fmtMoney(desp);
-    if(elSaldo) elSaldo.innerText = fmtMoney(rec - desp);
+    document.getElementById('dash-receitas').innerText = fmtMoney(rec);
+    document.getElementById('dash-despesas').innerText = fmtMoney(desp);
+    document.getElementById('dash-saldo').innerText = fmtMoney(rec - desp);
     
     const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
     renderTransactionList(filterData(data, term));
