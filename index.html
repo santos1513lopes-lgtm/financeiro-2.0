@@ -25,11 +25,21 @@
             <span class="text-lg font-bold tracking-wide whitespace-nowrap overflow-hidden sidebar-text">Gestão <span class="text-blue-400">Pro</span></span>
         </div>
         <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3">
-            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition active group" data-tab="dashboard"><i class="fas fa-home w-6 text-center text-blue-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Visão Geral</span></button>
-            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="transacoes"><i class="fas fa-list w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Lançamentos</span></button>
-            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="futuras"><i class="fas fa-calendar-alt w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Futuros</span></button>
-            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="extrato"><i class="fas fa-file-alt w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Relatórios</span></button>
-            <button id="btn-open-categories" class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group mt-4 border-t border-slate-700"><i class="fas fa-tags w-6 text-center text-orange-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Categorias</span></button>
+            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition active group" data-tab="dashboard">
+                <i class="fas fa-home w-6 text-center text-blue-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Visão Geral</span>
+            </button>
+            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="transacoes">
+                <i class="fas fa-list w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Lançamentos</span>
+            </button>
+            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="futuras">
+                <i class="fas fa-calendar-alt w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Futuros</span>
+            </button>
+            <button class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group" data-tab="extrato">
+                <i class="fas fa-file-alt w-6 text-center text-slate-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Relatórios</span>
+            </button>
+            <button id="btn-open-categories" class="nav-desktop w-full flex items-center px-3 py-3 rounded-lg hover:bg-white/10 transition group mt-4 border-t border-slate-700">
+                <i class="fas fa-tags w-6 text-center text-orange-400 group-hover:text-white transition"></i><span class="ml-3 font-medium sidebar-text">Categorias</span>
+            </button>
         </nav>
         <button id="btn-collapse" class="absolute -right-3 top-20 bg-blue-600 text-white w-6 h-6 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-500 transition transform hover:scale-110 border border-slate-800"><i class="fas fa-chevron-left text-xs"></i></button>
         <div class="p-4 border-t border-slate-700 bg-black/20">
@@ -74,7 +84,6 @@
                     <button id="btn-profile-mobile" class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">U</button>
                     <div id="mobile-profile-dropdown" class="hidden absolute right-0 mt-3 w-48 bg-white dark:bg-darkcard rounded-xl shadow-2xl py-2 border border-slate-100 dark:border-slate-700 z-50">
                         <div class="px-4 py-2 border-b dark:border-slate-700 mb-1"><p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Conta</p><p id="user-email-mobile" class="text-xs font-bold text-slate-800 dark:text-white truncate">...</p></div>
-                        <button id="btn-open-categories-mobile" class="w-full text-left px-4 py-3 text-sm text-slate-600 dark:text-slate-300 font-medium border-b dark:border-slate-700"><i class="fas fa-tags mr-2 text-orange-500"></i> Categorias</button>
                         <button id="btn-wipe-data-mobile" class="w-full text-left px-4 py-3 text-sm text-orange-500 font-medium border-b dark:border-slate-700"><i class="fas fa-eraser mr-2"></i> Zerar Dados</button>
                         <button id="btn-logout-mobile" class="w-full text-left px-4 py-3 text-sm text-red-600 font-bold"><i class="fas fa-sign-out-alt mr-2"></i> Sair</button>
                     </div>
@@ -83,6 +92,7 @@
         </div>
 
         <div id="main-scroll" class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-darkbg p-4 md:p-8 pb-24 md:pb-8">
+            
             <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6">
                 <div class="w-full max-w-sm bg-white dark:bg-darkcard p-8 rounded-2xl shadow-2xl">
                     <div class="mb-6 flex justify-center"><i class="fas fa-chart-pie text-5xl text-blue-600"></i></div>
@@ -109,7 +119,7 @@
                             <div class="flex justify-between"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo</div><label class="inline-flex items-center cursor-pointer"><input type="checkbox" id="toggle-future-balance" class="sr-only peer"><div class="relative w-8 h-4 bg-slate-200 rounded-full peer dark:bg-slate-700 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></div></label></div>
                             <div class="value-blur text-2xl font-bold text-blue-600" id="dash-saldo">R$ 0,00</div>
                         </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
+                         <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
                             <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Investimentos 🐷</div>
                             <div class="value-blur text-2xl font-bold text-purple-600" id="dash-invest">R$ 0,00</div>
                         </div>
@@ -166,6 +176,7 @@
     </main>
 
     <button id="fab-add" class="fixed right-6 bottom-20 md:bottom-10 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 transition-transform active:scale-90 border-4 border-white dark:border-slate-800"><i class="fas fa-plus"></i></button>
+
     <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-darkcard border-t dark:border-slate-800 flex justify-around py-3 md:hidden z-50 safe-area-bottom shadow-lg">
         <button class="nav-item active flex flex-col items-center text-blue-600" data-tab="dashboard"><i class="fas fa-chart-pie text-xl mb-0.5"></i><span class="text-[10px] font-bold">Painel</span></button>
         <button class="nav-item flex flex-col items-center text-slate-400" data-tab="transacoes"><i class="fas fa-list text-xl mb-0.5"></i><span class="text-[10px] font-medium">Lanç.</span></button>

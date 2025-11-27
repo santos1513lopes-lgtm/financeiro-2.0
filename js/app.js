@@ -1,12 +1,12 @@
  import { db, auth } from './firebase.js';
 import { 
-    collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, getDocs 
+    collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, getDocs, setDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
-    signInWithEmailAndPassword, onAuthStateChanged, signOut 
+    signInWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// --- VARIÁVEIS GLOBAIS ---
+// --- 1. VARIÁVEIS GLOBAIS ---
 let currentUser = null;
 let transactions = [];
 let userCategories = {};
@@ -18,6 +18,7 @@ let showTotalFuture = false;
 let startDate = "";
 let endDate = "";
 
+// Elementos de Visualização (Abas)
 const views = {
     dashboard: document.getElementById('tab-dashboard'),
     transacoes: document.getElementById('tab-transacoes'),
@@ -25,6 +26,7 @@ const views = {
     extrato: document.getElementById('tab-extrato')
 };
 
+// Categorias Padrão
 const defaultCategories = {
     "Saldo Inicial": "🏛️", "Vendas": "💰", "Serviços": "🛠️", "Reposição de Estoque": "📦", "Salário": "💵", 
     "Poupança": "🐷", "Donativo": "🤝", "Pró-labore": "💼", "MEI/DAS": "📄", "Impostos": "💸", 
@@ -32,70 +34,234 @@ const defaultCategories = {
     "Aluguel/Condomínio": "🏢", "Energia/Água/Net": "⚡", "Equipamentos": "💻", "Outros": "🔹"
 };
 
-// --- FUNÇÕES UTILITÁRIAS ---
+// --- 2. FUNÇÕES UTILITÁRIAS (O CÉREBRO BÁSICO) ---
+// Estas funções precisam estar aqui em cima para não dar erro de "undefined"
+
 function getIcon(cat) { return userCategories[cat] || defaultCategories[cat] || "🔹"; }
-function fmtMoney(v) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-function fmtDate(d) { if (!d) return ''; return d.split('-').reverse().join('/'); }
-function isDateInRange(dateStr) { return dateStr >= startDate && dateStr <= endDate; }
+
+function fmtMoney(v) { 
+    return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
+}
+
+function fmtDate(d) { 
+    if (!d) return '';
+    return d.split('-').reverse().join('/'); 
+}
+
+function isDateInRange(dateStr) {
+    return dateStr >= startDate && dateStr <= endDate;
+}
 
 function setDateRange(preset) {
     const today = new Date();
     let start = new Date();
     let end = new Date();
-    if (preset === 'today') { /* hoje */ }
-    else if (preset === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today.getFullYear(), today.getMonth() + 1, 0); }
-    else if (preset === 'last_month') { start = new Date(today.getFullYear(), today.getMonth() - 1, 1); end = new Date(today.getFullYear(), today.getMonth(), 0); }
-    else if (preset === 'year') { start = new Date(today.getFullYear(), 0, 1); end = new Date(today.getFullYear(), 11, 31); }
+
+    if (preset === 'today') { /* Já é hoje */ }
+    else if (preset === 'month') { 
+        start = new Date(today.getFullYear(), today.getMonth(), 1); 
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0); 
+    }
+    else if (preset === 'last_month') { 
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1); 
+        end = new Date(today.getFullYear(), today.getMonth(), 0); 
+    }
+    else if (preset === 'year') { 
+        start = new Date(today.getFullYear(), 0, 1); 
+        end = new Date(today.getFullYear(), 11, 31); 
+    }
+
     startDate = start.toISOString().split('T')[0];
     endDate = end.toISOString().split('T')[0];
-    
+
     const elStart = document.getElementById('filter-start-date');
     const elEnd = document.getElementById('filter-end-date');
     if(elStart) elStart.value = startDate;
     if(elEnd) elEnd.value = endDate;
     
-    updateDateLabel(); updateInterface();
+    updateDateLabel();
     
+    // Esconde dropdown
     const dd = document.getElementById('date-dropdown');
     if(dd) dd.classList.add('hidden');
+
+    // Atualiza a tela
+    updateInterface();
 }
 
 function updateDateLabel() {
     const el = document.getElementById('date-label');
     if(!el) return;
-    const s = startDate.split('-'); const e = endDate.split('-');
+    const s = startDate.split('-'); 
+    const e = endDate.split('-');
     el.innerText = `${s[2]}/${s[1]} - ${e[2]}/${e[1]}`;
 }
 
-// --- SIDEBAR ---
-const sidebar = document.getElementById('sidebar');
-const btnCollapse = document.getElementById('btn-collapse');
-if(btnCollapse && sidebar) {
-    btnCollapse.onclick = () => {
-        sidebar.classList.toggle('w-64'); sidebar.classList.toggle('w-20');
-        document.querySelectorAll('.sidebar-text').forEach(t => t.classList.toggle('hidden'));
-        const icon = btnCollapse.querySelector('i');
-        if(sidebar.classList.contains('w-20')) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
-        else { icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-left'); }
-    };
+function filterData(data, term) {
+    if(!term) return data;
+    return data.filter(t => {
+        const typeKeywords = t.type === 'entrada' ? 'entrada receita lucro' : 'saida saída despesa custo';
+        return t.description.toLowerCase().includes(term) || t.category.toLowerCase().includes(term) || typeKeywords.includes(term);
+    });
 }
 
-// --- AUTH ---
+function sortData(data) {
+    return data.sort((a, b) => {
+        let valA = a[sortConfig.column]; let valB = b[sortConfig.column];
+        if (sortConfig.column === 'amount') return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        if (sortConfig.column === 'date') return sortConfig.direction === 'asc' ? new Date(valA) - new Date(valB) : new Date(valB) - new Date(valA);
+        return sortConfig.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+}
+
+// --- 3. RENDERIZADORES VISUAIS (MOVIDOS PARA CIMA) ---
+// Agora o navegador lê isto ANTES de tentar usar
+
+function renderTransactionList(data) {
+    const el = document.getElementById('transaction-list');
+    if(!el) return;
+    el.innerHTML = '';
+    if (data.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 mt-10">Sem dados.</div>'; return; }
+    
+    sortData(data); 
+    
+    data.forEach(t => {
+        const isExp = t.type === 'saida'; const color = isExp ? 'text-red-600' : 'text-green-600';
+        const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
+        const statusBadge = t.status==='efetivado' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">PAGO</span>' : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-[10px] font-bold">PENDENTE</span>';
+        
+        el.innerHTML += `
+            <div class="bg-white dark:bg-darkcard p-3 rounded-lg border border-slate-100 dark:border-slate-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 mb-2" onclick="editTransaction('${t.id}')">
+                <div class="flex items-center gap-3 md:hidden">
+                    <div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center ${color} shrink-0"><i class="fas ${isExp?'fa-arrow-down':'fa-arrow-up'}"></i></div>
+                    <div class="flex-1 min-w-0"><div class="font-bold text-slate-800 dark:text-white truncate">${t.description}</div><div class="text-xs text-slate-500">${fmtDate(t.date)} • ${getIcon(t.category)}</div></div>
+                    <div class="text-right"><div class="font-bold ${color} value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>${statusBadge}</div>
+                </div>
+                <div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono">${fmtDate(t.date)}</div>
+                <div class="hidden md:block text-sm font-medium text-slate-800 dark:text-white col-span-4 truncate">${t.description}</div>
+                <div class="hidden md:block text-sm text-slate-500 col-span-2 truncate">${getIcon(t.category)} ${t.category}</div>
+                <div class="hidden md:block text-sm font-bold text-right col-span-2 ${color} value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
+                <div class="hidden md:block text-center col-span-1">${statusBadge}</div>
+                <div class="hidden md:flex justify-center col-span-1"><button onclick="deleteTransaction('${t.id}')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-trash"></i></button></div>
+            </div>`;
+    });
+}
+
+function renderFutureList() {
+    // Lógica de renderização futura
+    const today = new Date().toISOString().split('T')[0];
+    let pending = transactions.filter(t => t.status === 'pendente');
+    
+    if(!showTotalFuture) {
+        pending = pending.filter(t => isDateInRange(t.date));
+    }
+    
+    const recP = pending.filter(t => t.type === 'entrada').reduce((a,b)=>a+b.amount,0);
+    const despP = pending.filter(t => t.type === 'saida').reduce((a,b)=>a+b.amount,0);
+    
+    if(document.getElementById('future-income')) document.getElementById('future-income').innerText = fmtMoney(recP);
+    if(document.getElementById('future-expense')) document.getElementById('future-expense').innerText = fmtMoney(despP);
+    if(document.getElementById('future-balance')) document.getElementById('future-balance').innerText = fmtMoney(recP - despP);
+    
+    const el = document.getElementById('future-list');
+    if(!el) return;
+    el.innerHTML = '';
+    if(pending.length===0) { el.innerHTML='<div class="text-center text-slate-400 text-xs py-4">Nada pendente.</div>'; return; }
+    
+    sortData(pending);
+    
+    pending.forEach(t => {
+        const isLate = t.date < today;
+        const color = t.type === 'saida' ? 'text-red-600' : 'text-green-600';
+        const warningIcon = isLate ? '<i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>' : '';
+        el.innerHTML += `
+            <div class="flex justify-between items-center p-3 border-b dark:border-slate-700">
+                <div>
+                    <div class="font-bold text-slate-700 dark:text-white text-sm truncate w-48">${t.description}</div>
+                    <div class="text-xs ${isLate?'text-red-500 font-bold':'text-slate-400'}">${warningIcon} ${fmtDate(t.date)}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div>
+                    <button onclick="payTransaction('${t.id}')" class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded mt-1 hover:bg-green-100 hover:text-green-700">Baixar</button>
+                </div>
+            </div>`;
+    });
+}
+
+function renderRecentList(data) {
+    const el = document.getElementById('recent-transactions-list');
+    if(!el) return;
+    el.innerHTML = '';
+    const recent = [...data].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+    if(recent.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Sem dados.</div>'; return; }
+    recent.forEach(t => {
+        const isExp = t.type === 'saida';
+        const color = isExp ? 'text-red-600' : 'text-green-600';
+        const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
+        const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
+        el.innerHTML += `
+            <div class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition">
+                <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
+                <div class="flex-1 min-w-0"><div class="font-bold text-slate-700 dark:text-gray-200 text-sm truncate">${t.description}</div><div class="text-xs text-gray-400">${fmtDate(t.date)}</div></div>
+                <div class="font-bold ${color} text-sm value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>
+            </div>`;
+    });
+}
+
+function renderExtratoTable(data) {
+    const el = document.getElementById('report-preview');
+    if(!el) return;
+    if(data.length===0) { el.innerHTML='<div class="text-center p-4 text-slate-400">Sem dados</div>'; return; }
+    sortData(data);
+    let h = '<div class="min-w-[600px]">';
+    data.forEach((t, idx) => {
+        const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50';
+        h += `<div class="grid grid-cols-12 gap-4 p-3 ${rowBg} border-b border-slate-100 dark:border-slate-700 items-center text-sm">
+            <div class="col-span-2 font-mono text-slate-600 dark:text-gray-300">${fmtDate(t.date)}</div>
+            <div class="col-span-6 font-medium text-slate-800 dark:text-white truncate">${getIcon(t.category)} ${t.description}</div>
+            <div class="col-span-4 font-bold text-right ${t.type==='saida'?'text-red-600':'text-green-600'} value-blur">${fmtMoney(t.amount)}</div>
+        </div>`;
+    });
+    el.innerHTML = h + '</div>';
+}
+
+function renderChart(d){
+    const el=document.getElementById('expenseChart'); if(!el)return; 
+    const ctx=el.getContext('2d'); 
+    if(chartInstance)chartInstance.destroy(); 
+    const ex=(d||[]).filter(t=>t.type==='saida'&&t.status==='efetivado'); 
+    const cats={}; ex.forEach(t=>{cats[t.category]=(cats[t.category]||0)+t.amount}); 
+    chartInstance=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#64748b'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:12,color:document.body.classList.contains('dark')?'#cbd5e1':'#4b5563'}}},cutout:'75%'}});
+}
+
+// --- 4. INICIALIZAÇÃO E AUTH ---
+
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-content').classList.remove('hidden');
+        
         const topControls = document.getElementById('top-controls');
-        if(topControls) { topControls.classList.remove('hidden'); topControls.classList.add('md:flex'); }
+        if(topControls) {
+            topControls.classList.remove('hidden');
+            topControls.classList.add('md:flex');
+        }
         
         const email = user.email;
         const initial = email.charAt(0).toUpperCase();
-        if(document.getElementById('user-email-display')) document.getElementById('user-email-display').innerText = email;
-        if(document.getElementById('user-email-mobile')) document.getElementById('user-email-mobile').innerText = email;
-        if(document.getElementById('user-name-display')) document.getElementById('user-name-display').innerText = "Olá, " + email.split('@')[0];
-        if(document.getElementById('avatar-display')) document.getElementById('avatar-display').innerText = initial;
-        if(document.getElementById('btn-profile-mobile')) document.getElementById('btn-profile-mobile').innerText = initial;
+        
+        const elEmail = document.getElementById('user-email-display');
+        const elMobEmail = document.getElementById('user-email-mobile');
+        const elName = document.getElementById('user-name-display');
+        const elAvatar = document.getElementById('avatar-display');
+        const elMobProfile = document.getElementById('btn-profile-mobile');
+
+        if(elEmail) elEmail.innerText = email;
+        if(elMobEmail) elMobEmail.innerText = email;
+        if(elName) elName.innerText = "Olá, " + email.split('@')[0];
+        if(elAvatar) elAvatar.innerText = initial;
+        if(elMobProfile) elMobProfile.innerText = initial;
 
         initApp();
     } else {
@@ -118,79 +284,99 @@ async function initApp() {
     });
 }
 
-// --- UPDATE INTERFACE ---
+// --- 5. ATUALIZAÇÃO DA TELA (CORE) ---
+
 function updateInterface() {
     const periodData = transactions.filter(t => isDateInRange(t.date));
     const accData = transactions.filter(t => t.date <= endDate);
     
+    // 1. INVESTIMENTOS (ACUMULADO)
     const investTotalData = transactions.filter(t => t.category === 'Poupança' && t.status === 'efetivado');
     const investIn = investTotalData.filter(t => t.type === 'saida').reduce((a,t) => a+t.amount, 0);
     const investOut = investTotalData.filter(t => t.type === 'entrada').reduce((a,t) => a+t.amount, 0);
-    if(document.getElementById('dash-invest')) document.getElementById('dash-invest').innerText = fmtMoney(investIn - investOut);
+    const totalInvest = investIn - investOut;
+    if(document.getElementById('dash-invest')) document.getElementById('dash-invest').innerText = fmtMoney(totalInvest);
 
-    const rec = periodData.filter(t => t.type === 'entrada' && t.status === 'efetivado' && t.category !== 'Poupança').reduce((a,t) => a+t.amount,0);
-    const desp = periodData.filter(t => t.type === 'saida' && t.status === 'efetivado' && t.category !== 'Poupança').reduce((a,t) => a+t.amount,0);
+    // 2. RECEITA/DESPESA (MÊS) - Ignora Poupança
+    const rec = periodData
+        .filter(t => t.type === 'entrada' && t.status === 'efetivado' && t.category !== 'Poupança')
+        .reduce((a,t) => a+t.amount,0);
+    
+    const desp = periodData
+        .filter(t => t.type === 'saida' && t.status === 'efetivado' && t.category !== 'Poupança')
+        .reduce((a,t) => a+t.amount,0);
+        
     if(document.getElementById('dash-receitas')) document.getElementById('dash-receitas').innerText = fmtMoney(rec);
     if(document.getElementById('dash-despesas')) document.getElementById('dash-despesas').innerText = fmtMoney(desp);
     
+    // 3. SALDO EM CAIXA
     let recAcc=0, despAcc=0;
     const dataForSaldo = includeFuture ? accData : accData.filter(t => t.status === 'efetivado');
     recAcc = dataForSaldo.filter(t => t.type === 'entrada').reduce((a,t) => a+t.amount,0);
     despAcc = dataForSaldo.filter(t => t.type === 'saida').reduce((a,t) => a+t.amount,0);
-    if(document.getElementById('dash-saldo')) document.getElementById('dash-saldo').innerText = fmtMoney(recAcc - despAcc);
+    
+    const saldoCaixa = recAcc - despAcc;
+    if(document.getElementById('dash-saldo')) document.getElementById('dash-saldo').innerText = fmtMoney(saldoCaixa);
 
+    // 4. Renderers (PROTEGIDOS COM TRY/CATCH)
     try {
         const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
         renderTransactionList(filterData(periodData, term));
         renderFutureList(); 
         renderRecentList(periodData);
         renderChart(periodData.filter(t => t.category !== 'Poupança'));
+        
         const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
         renderExtratoTable(filterData(periodData, termRep));
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Erro Render:", e); }
     
-    if(!valuesVisible) { document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none')); }
+    if(!valuesVisible) {
+        document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none'));
+    }
 }
 
-// --- EVENTOS DE TABS (CORRIGIDOS) ---
-// Agora usa addEventListener para garantir que funciona
-function switchTab(tabName) {
-    Object.values(views).forEach(el => el && el.classList.add('hidden'));
-    if(views[tabName]) views[tabName].classList.remove('hidden');
-    
-    document.querySelectorAll('.nav-desktop').forEach(b => {
-        if(b.dataset.tab === tabName) { b.classList.add('bg-white/10', 'text-white'); b.classList.remove('text-slate-400'); }
-        else { b.classList.remove('bg-white/10', 'text-white'); b.classList.add('text-slate-400'); }
-    });
-    document.querySelectorAll('.nav-item').forEach(b => {
-        if(b.dataset.tab === tabName) b.classList.add('text-blue-600', 'font-bold');
-        else b.classList.remove('text-blue-600', 'font-bold');
-    });
-    
-    const titles = { dashboard: "Visão Geral", transacoes: "Lançamentos", futuras: "Contas a Pagar", extrato: "Relatórios" };
-    const titleEl = document.getElementById('page-title');
-    if(titleEl && titles[tabName]) titleEl.innerText = titles[tabName];
-    
-    if(tabName === 'dashboard') renderChart(transactions.filter(t => isDateInRange(t.date)));
+// --- 6. EVENTOS E INTERATIVIDADE ---
+
+// Busca
+if(document.getElementById('search-trans')) document.getElementById('search-trans').addEventListener('input', (e) => renderTransactionList(filterData(transactions.filter(t => isDateInRange(t.date)), e.target.value.toLowerCase())));
+if(document.getElementById('search-report')) document.getElementById('search-report').addEventListener('input', (e) => renderExtratoTable(filterData(transactions.filter(t => isDateInRange(t.date)), e.target.value.toLowerCase())));
+
+// Sidebar Collapse
+const btnColl = document.getElementById('btn-collapse');
+if(btnColl && sidebar) {
+    btnColl.onclick = () => {
+        sidebar.classList.toggle('w-64'); sidebar.classList.toggle('w-20');
+        document.querySelectorAll('.sidebar-text').forEach(t => t.classList.toggle('hidden'));
+        const icon = btnColl.querySelector('i');
+        if(sidebar.classList.contains('w-20')) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
+        else { icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-left'); }
+    };
 }
 
-// Adiciona listeners a todos os botões de navegação
-document.addEventListener('DOMContentLoaded', () => {
-    const navBtns = document.querySelectorAll('.nav-desktop, .nav-item');
-    navBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            if(btn.dataset.tab) switchTab(btn.dataset.tab);
-        });
-    });
-});
-// Fallback para caso o DOMContentLoaded já tenha passado
-const navBtns = document.querySelectorAll('.nav-desktop, .nav-item');
-navBtns.forEach(btn => {
-    btn.onclick = () => { if(btn.dataset.tab) switchTab(btn.dataset.tab); };
-});
+// Date Picker Events
+const btnDateRange = document.getElementById('btn-date-range');
+const dateDropdown = document.getElementById('date-dropdown');
+if(btnDateRange && dateDropdown) {
+    btnDateRange.onclick = (e) => { e.stopPropagation(); dateDropdown.classList.toggle('hidden'); };
+    window.addEventListener('click', (e) => { if (!btnDateRange.contains(e.target) && !dateDropdown.contains(e.target)) dateDropdown.classList.add('hidden'); });
+}
+document.querySelectorAll('.date-preset').forEach(btn => btn.onclick = () => setDateRange(btn.dataset.range));
+if(document.getElementById('btn-apply-date')) {
+    document.getElementById('btn-apply-date').onclick = () => {
+        startDate = document.getElementById('filter-start-date').value;
+        endDate = document.getElementById('filter-end-date').value;
+        if(!startDate || !endDate) return alert("Selecione as datas");
+        updateDateLabel(); updateInterface(); dateDropdown.classList.add('hidden');
+    };
+}
 
+// Sorting
+window.toggleSort = (col) => {
+    if (sortConfig.column === col) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    else { sortConfig.column = col; sortConfig.direction = 'asc'; }
+    updateInterface();
+};
 
-// --- EVENTOS GLOBAIS ---
 // Toggles
 const toggleValuesBtn = () => {
     valuesVisible = !valuesVisible;
@@ -226,7 +412,10 @@ if(btnDeskProfile && dropDesk) {
     window.addEventListener('click', (e) => { if (!btnDeskProfile.contains(e.target) && !dropDesk.contains(e.target)) dropDesk.classList.add('hidden'); });
 }
 
-// Ações
+// Logout e Wipe
+const logout = () => { if(confirm("Sair?")) signOut(auth); };
+document.querySelectorAll('[id^="btn-logout"]').forEach(b => b.onclick = logout);
+
 const wipeData = async () => {
     if(confirm("ATENÇÃO: Apagar TUDO?")) {
         if(prompt("Digite ZERAR:") === "ZERAR") {
@@ -238,55 +427,52 @@ const wipeData = async () => {
         }
     }
 };
-if(document.getElementById('btn-wipe-data')) document.getElementById('btn-wipe-data').onclick = wipeData;
-if(document.getElementById('btn-wipe-data-mobile')) document.getElementById('btn-wipe-data-mobile').onclick = wipeData;
+document.querySelectorAll('[id^="btn-wipe"]').forEach(b => b.onclick = wipeData);
 
-const logout = () => { if(confirm("Sair?")) signOut(auth); };
-if(document.getElementById('btn-logout-dropdown')) document.getElementById('btn-logout-dropdown').onclick = logout;
-if(document.getElementById('btn-logout-mobile')) document.getElementById('btn-logout-mobile').onclick = logout;
-
+// Login
 document.getElementById('btn-login').onclick = async () => {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
+    const email = document.getElementById('email').value; const pass = document.getElementById('password').value;
     if(!email || !pass) { document.getElementById('auth-msg').textContent = "Preencha tudo."; return; }
-    try { await signInWithEmailAndPassword(auth, email, pass); } 
-    catch (error) { document.getElementById('auth-msg').textContent = "Acesso negado."; }
+    try { await signInWithEmailAndPassword(auth, email, pass); } catch (error) { document.getElementById('auth-msg').textContent = "Acesso negado."; }
 };
 
-const htmlEl = document.documentElement;
+// Tema
 const toggleTheme = () => {
-    const isDark = htmlEl.classList.toggle('dark');
+    const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     document.querySelectorAll('[id^="btn-theme"]').forEach(b => b.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>');
 };
 document.querySelectorAll('[id^="btn-theme"]').forEach(b => b.onclick = toggleTheme);
 if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    htmlEl.classList.add('dark'); document.querySelectorAll('[id^="btn-theme"]').forEach(b => b.innerHTML = '<i class="fas fa-sun"></i>');
+    document.documentElement.classList.add('dark');
+    document.querySelectorAll('[id^="btn-theme"]').forEach(b => b.innerHTML = '<i class="fas fa-sun"></i>');
 }
 
-// Date Picker
-const btnDateRange = document.getElementById('btn-date-range');
-const dateDropdown = document.getElementById('date-dropdown');
-if(btnDateRange && dateDropdown) {
-    btnDateRange.onclick = (e) => { e.stopPropagation(); dateDropdown.classList.toggle('hidden'); };
-    window.addEventListener('click', (e) => { if (!btnDateRange.contains(e.target) && !dateDropdown.contains(e.target)) dateDropdown.classList.add('hidden'); });
-}
-document.querySelectorAll('.date-preset').forEach(btn => btn.onclick = () => setDateRange(btn.dataset.range));
-if(document.getElementById('btn-apply-date')) document.getElementById('btn-apply-date').onclick = () => {
-    startDate = document.getElementById('filter-start-date').value;
-    endDate = document.getElementById('filter-end-date').value;
-    if(!startDate || !endDate) return alert("Selecione as datas");
-    updateDateLabel(); updateInterface(); dateDropdown.classList.add('hidden');
-};
-
-// --- FUNÇÕES DE SUPORTE ---
-function filterData(data, term) {
-    if(!term) return data;
-    return data.filter(t => {
-        return t.description.toLowerCase().includes(term) || t.category.toLowerCase().includes(term);
+// Navigation
+function switchTab(tabName) {
+    Object.values(views).forEach(el => el && el.classList.add('hidden'));
+    if(views[tabName]) views[tabName].classList.remove('hidden');
+    
+    document.querySelectorAll('.nav-desktop').forEach(b => {
+        if(b.dataset.tab === tabName) { b.classList.add('bg-white/10', 'text-white'); b.classList.remove('text-slate-400'); }
+        else { b.classList.remove('bg-white/10', 'text-white'); b.classList.add('text-slate-400'); }
     });
-}
+    
+    document.querySelectorAll('.nav-item').forEach(b => {
+        if(b.dataset.tab === tabName) b.classList.add('text-blue-600', 'font-bold');
+        else b.classList.remove('text-blue-600', 'font-bold');
+    });
 
+    const titles = { dashboard: "Visão Geral", transacoes: "Lançamentos", futuras: "Contas a Pagar", extrato: "Relatórios" };
+    const titleEl = document.getElementById('page-title');
+    if(titleEl) titleEl.innerText = titles[tabName];
+
+    if(tabName === 'dashboard') renderChart(transactions.filter(t => isDateInRange(t.date)));
+}
+document.querySelectorAll('.nav-desktop, .nav-item').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+
+// --- GESTÃO DE CATEGORIAS ---
 async function loadCategories() {
     try {
         const q = query(collection(db, "categories"), where("user_id", "==", currentUser.uid));
@@ -311,87 +497,15 @@ function populateCategorySelect() {
     }
 }
 
-window.toggleSort = (col) => {
-    if (sortConfig.column === col) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    else { sortConfig.column = col; sortConfig.direction = 'asc'; }
-    updateInterface();
-};
-
-function sortData(data) {
-    return data.sort((a, b) => {
-        let valA = a[sortConfig.column]; let valB = b[sortConfig.column];
-        if (sortConfig.column === 'amount') return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
-        if (sortConfig.column === 'date') return sortConfig.direction === 'asc' ? new Date(valA) - new Date(valB) : new Date(valB) - new Date(valA);
-        return sortConfig.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-    });
-}
-
-// --- RENDERIZADORES ---
-function renderTransactionList(data) {
-    const el = document.getElementById('transaction-list'); if(!el) return; el.innerHTML = '';
-    if (data.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 mt-10">Sem dados.</div>'; return; }
-    sortData(data); 
-    data.forEach(t => {
-        const isExp = t.type === 'saida'; const color = isExp ? 'text-red-600' : 'text-green-600';
-        const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
-        const statusBadge = t.status==='efetivado' ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-[10px] font-bold">PAGO</span>' : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-[10px] font-bold">PENDENTE</span>';
-        el.innerHTML += `<div class="bg-white dark:bg-darkcard p-3 rounded-lg border border-slate-100 dark:border-slate-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 mb-2" onclick="editTransaction('${t.id}')"><div class="flex items-center gap-3 md:hidden"><div class="w-10 h-10 rounded-full ${bg} flex items-center justify-center ${color} shrink-0"><i class="fas ${isExp?'fa-arrow-down':'fa-arrow-up'}"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-slate-800 dark:text-white truncate">${t.description}</div><div class="text-xs text-slate-500">${fmtDate(t.date)} • ${getIcon(t.category)}</div></div><div class="text-right"><div class="font-bold ${color} value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div>${statusBadge}</div></div><div class="hidden md:block text-sm text-slate-600 dark:text-gray-300 col-span-2 font-mono">${fmtDate(t.date)}</div><div class="hidden md:block text-sm font-medium text-slate-800 dark:text-white col-span-4 truncate">${t.description}</div><div class="hidden md:block text-sm text-slate-500 col-span-2 truncate">${getIcon(t.category)} ${t.category}</div><div class="hidden md:block text-sm font-bold text-right col-span-2 ${color} value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div><div class="hidden md:block text-center col-span-1">${statusBadge}</div><div class="hidden md:flex justify-center col-span-1"><button onclick="deleteTransaction('${t.id}')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-trash"></i></button></div></div>`;
-    });
-}
-
-function renderFutureList() {
-    const today = new Date().toISOString().split('T')[0];
-    let pending = transactions.filter(t => t.status === 'pendente');
-    if(!showTotalFuture) pending = pending.filter(t => isDateInRange(t.date));
-    const recP = pending.filter(t => t.type === 'entrada').reduce((a,b)=>a+b.amount,0);
-    const despP = pending.filter(t => t.type === 'saida').reduce((a,b)=>a+b.amount,0);
-    if(document.getElementById('future-income')) document.getElementById('future-income').innerText = fmtMoney(recP);
-    if(document.getElementById('future-expense')) document.getElementById('future-expense').innerText = fmtMoney(despP);
-    if(document.getElementById('future-balance')) document.getElementById('future-balance').innerText = fmtMoney(recP - despP);
-    const el = document.getElementById('future-list'); if(!el) return; el.innerHTML = '';
-    if(pending.length===0) { el.innerHTML='<div class="text-center text-slate-400 text-xs py-4">Nada pendente.</div>'; return; }
-    sortData(pending);
-    pending.forEach(t => {
-        const isLate = t.date < today; const color = t.type === 'saida' ? 'text-red-600' : 'text-green-600'; const warningIcon = isLate ? '<i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>' : '';
-        el.innerHTML += `<div class="flex justify-between items-center p-3 border-b dark:border-slate-700"><div><div class="font-bold text-slate-700 dark:text-white text-sm truncate w-48">${t.description}</div><div class="text-xs ${isLate?'text-red-500 font-bold':'text-slate-400'}">${warningIcon} ${fmtDate(t.date)}</div></div><div class="text-right"><div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded mt-1 hover:bg-green-100 hover:text-green-700">Baixar</button></div></div>`;
-    });
-}
-
-function renderRecentList(data) {
-    const el = document.getElementById('recent-transactions-list'); if(!el) return; el.innerHTML = '';
-    const recent = [...data].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-    if(recent.length === 0) { el.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Sem dados.</div>'; return; }
-    recent.forEach(t => {
-        const isExp = t.type === 'saida'; const color = isExp ? 'text-red-600' : 'text-green-600'; const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up'; const bg = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
-        el.innerHTML += `<div class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition"><div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-slate-700 dark:text-gray-200 text-sm truncate">${t.description}</div><div class="text-xs text-gray-400">${fmtDate(t.date)}</div></div><div class="font-bold ${color} text-sm value-blur">${isExp?'-':'+'} ${fmtMoney(t.amount)}</div></div>`;
-    });
-}
-
-function renderExtratoTable(data) {
-    const el = document.getElementById('report-preview'); if(!el) return;
-    if(data.length===0) { el.innerHTML='<div class="text-center p-4 text-slate-400">Sem dados</div>'; return; }
-    sortData(data);
-    let h = '<div class="min-w-[600px]">';
-    data.forEach((t, idx) => {
-        const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50';
-        h += `<div class="grid grid-cols-12 gap-4 p-3 ${rowBg} border-b border-slate-100 dark:border-slate-700 items-center text-sm"><div class="col-span-2 font-mono text-slate-600 dark:text-gray-300">${fmtDate(t.date)}</div><div class="col-span-6 font-medium text-slate-800 dark:text-white truncate">${getIcon(t.category)} ${t.description}</div><div class="col-span-4 font-bold text-right ${t.type==='saida'?'text-red-600':'text-green-600'} value-blur">${fmtMoney(t.amount)}</div></div>`;
-    });
-    el.innerHTML = h + '</div>';
-}
-
-function renderChart(d){
-    const el=document.getElementById('expenseChart'); if(!el)return; 
-    const ctx=el.getContext('2d'); 
-    if(chartInstance)chartInstance.destroy(); 
-    const ex=(d||[]).filter(t=>t.type==='saida'&&t.status==='efetivado'); 
-    const cats={}; ex.forEach(t=>{cats[t.category]=(cats[t.category]||0)+t.amount}); 
-    chartInstance=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#64748b'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:12,color:document.body.classList.contains('dark')?'#cbd5e1':'#4b5563'}}},cutout:'75%'}});
-}
-
-// --- MODAL & GESTÃO CATEGORIAS ---
+// Modal Categorias
 const modalCat = document.getElementById('modal-categories');
 if(document.getElementById('btn-open-categories')) document.getElementById('btn-open-categories').onclick = openCategories;
-function openCategories() { renderCategoryList(); modalCat.classList.remove('hidden'); modalCat.classList.add('flex'); }
+
+function openCategories() {
+    renderCategoryList();
+    modalCat.classList.remove('hidden');
+    modalCat.classList.add('flex');
+}
 if(document.getElementById('close-categories')) document.getElementById('close-categories').onclick = () => { modalCat.classList.add('hidden'); modalCat.classList.remove('flex'); };
 
 if(document.getElementById('form-add-category')) {
@@ -408,6 +522,7 @@ if(document.getElementById('form-add-category')) {
         } catch(e) { console.error(e); }
     };
 }
+
 async function renderCategoryList() {
     const list = document.getElementById('categories-list'); if(!list) return;
     const q = query(collection(db, "categories"), where("user_id", "==", currentUser.uid));
@@ -415,11 +530,14 @@ async function renderCategoryList() {
     list.innerHTML = '';
     snap.forEach(docItem => {
         const d = docItem.data();
-        list.innerHTML += `<div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded border dark:border-slate-700"><span class="text-slate-700 dark:text-white text-sm">${d.icon} ${d.name}</span><button onclick="deleteCategory('${docItem.id}')" class="text-red-500 hover:bg-red-100 p-1 rounded"><i class="fas fa-trash"></i></button></div>`;
+        const isProtected = d.name === "Poupança" || d.name === "Saldo Inicial";
+        const btnDel = isProtected ? '<span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 rounded">PADRÃO</span>' : `<button onclick="deleteCategory('${docItem.id}')" class="text-red-500 hover:bg-red-100 p-1 rounded"><i class="fas fa-trash"></i></button>`;
+        list.innerHTML += `<div class="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded border dark:border-slate-700"><span class="text-slate-700 dark:text-white text-sm">${d.icon} ${d.name}</span>${btnDel}</div>`;
     });
 }
 window.deleteCategory = async (id) => { if(confirm("Apagar?")) { await deleteDoc(doc(db, "categories", id)); loadCategories(); setTimeout(renderCategoryList, 500); } };
 
+// --- MODAL E CRUD ---
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
@@ -429,12 +547,10 @@ const inputPaid = document.getElementById('input-paid');
 const statusText = document.getElementById('status-text');
 const btnDelete = document.getElementById('btn-delete');
 
-if(inputPaid && statusText) {
-    inputPaid.addEventListener('change', () => {
-        if(inputPaid.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
-        else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
-    });
-}
+if(inputPaid) inputPaid.addEventListener('change', () => {
+    if(inputPaid.checked) { statusText.innerText = "Concluído/Pago"; statusText.className = "font-bold text-green-600"; }
+    else { statusText.innerText = "Pendente/A Receber"; statusText.className = "font-bold text-yellow-600"; }
+});
 if(inputAmount) inputAmount.addEventListener('input', (e) => { let v = e.target.value.replace(/\D/g,""); e.target.value = (Number(v)/100).toFixed(2).replace(".",","); });
 if(inputRecurrence) inputRecurrence.addEventListener('change', () => {
     const c=document.getElementById('div-period-count'); const f=document.getElementById('div-frequency');
@@ -531,7 +647,7 @@ window.payTransaction = async (id) => {
     if(confirm("Baixar?")) await updateDoc(doc(db,"transactions",id),{status:'efetivado'});
 };
 
-// PDF & CSV
+// PDF & CSV (Mantidos)
 if(document.getElementById('btn-download-pdf')) document.getElementById('btn-download-pdf').onclick = () => {
     const term = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
     const data = filterData(transactions.filter(t => isDateInRange(t.date)), term);
@@ -560,4 +676,4 @@ if(document.getElementById('btn-download-csv')) document.getElementById('btn-dow
     link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,"+csv));
     link.setAttribute("download", "relatorio.csv");
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
-};
+}; 
