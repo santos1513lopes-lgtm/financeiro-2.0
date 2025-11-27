@@ -12,6 +12,7 @@ let chartInstance = null;
 let sortConfig = { column: 'date', direction: 'desc' };
 let valuesVisible = true;
 let includeFuture = false; 
+let showTotalFuture = false; // NOVO: Controle do Toggle na aba Futuras
 
 const views = {
     dashboard: document.getElementById('tab-dashboard'),
@@ -28,7 +29,7 @@ const categoryIcons = {
 };
 function getIcon(cat) { return categoryIcons[cat] || "🔹"; }
 
-// --- AUTH ---
+// --- AUTH & PROFILE ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -79,12 +80,21 @@ const toggleValues = () => {
 if(document.getElementById('btn-toggle-values-desktop')) document.getElementById('btn-toggle-values-desktop').onclick = toggleValues;
 if(document.getElementById('btn-toggle-values-mobile')) document.getElementById('btn-toggle-values-mobile').onclick = toggleValues;
 
-// --- TOGGLE FUTURO (SALDO) ---
+// --- TOGGLE FUTURO (SALDO DO DASHBOARD) ---
 const toggleFuture = document.getElementById('toggle-future-balance');
 if(toggleFuture) {
     toggleFuture.addEventListener('change', (e) => {
         includeFuture = e.target.checked;
         updateInterface();
+    });
+}
+
+// --- NOVO TOGGLE (TOTAL FUTURO NA ABA CONTAS) ---
+const toggleTotalFuture = document.getElementById('toggle-total-future');
+if(toggleTotalFuture) {
+    toggleTotalFuture.addEventListener('change', (e) => {
+        showTotalFuture = e.target.checked;
+        updateInterface(); // Atualiza para re-calcular e re-renderizar
     });
 }
 
@@ -197,14 +207,19 @@ function getAccumulatedData() {
 }
 
 function updateInterface() {
+    // 1. Dados do Mês (Fluxo)
     const monthData = getCurrentMonthData();
     const recMonth = monthData.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
     const despMonth = monthData.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
+    
     document.getElementById('dash-receitas').innerText = fmtMoney(recMonth);
     document.getElementById('dash-despesas').innerText = fmtMoney(despMonth);
 
+    // 2. Dados Acumulados (Saldo)
     const accData = getAccumulatedData();
-    let recAcc = 0; let despAcc = 0;
+    let recAcc = 0; 
+    let despAcc = 0;
+
     if(includeFuture) {
         recAcc = accData.filter(t => t.type === 'entrada').reduce((a,t) => a+t.amount,0);
         despAcc = accData.filter(t => t.type === 'saida').reduce((a,t) => a+t.amount,0);
@@ -212,13 +227,18 @@ function updateInterface() {
         recAcc = accData.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
         despAcc = accData.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
     }
+
     document.getElementById('dash-saldo').innerText = fmtMoney(recAcc - despAcc);
     
     const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
     renderTransactionList(filterData(monthData, term));
+    
+    // 3. Lançamentos Futuros (AQUI MUDA A LÓGICA)
     renderFutureList(); 
+    
     renderRecentList(monthData);
     renderChart(monthData);
+    
     const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
     renderExtratoTable(filterData(monthData, termRep));
     
@@ -335,10 +355,18 @@ function renderTransactionList(data) {
     });
 }
 
-// RENDER FUTURAS (ATUALIZADA)
+// RENDER FUTURAS (NOVA LÓGICA COM TOGGLE)
 function renderFutureList() {
     const today = new Date().toISOString().split('T')[0];
-    const pending = transactions.filter(t => t.status === 'pendente');
+    const selectedMonth = document.getElementById('global-month').value;
+    
+    // Base: Todas as pendentes
+    let pending = transactions.filter(t => t.status === 'pendente');
+    
+    // Se NÃO estiver marcado "Total", filtra pelo mês
+    if (!showTotalFuture) {
+        pending = pending.filter(t => t.date.startsWith(selectedMonth));
+    }
     
     const recP = pending.filter(t => t.type === 'entrada').reduce((a,b)=>a+b.amount,0);
     const despP = pending.filter(t => t.type === 'saida').reduce((a,b)=>a+b.amount,0);
@@ -356,7 +384,7 @@ function renderFutureList() {
     const el = document.getElementById('future-list');
     if(!el) return;
     el.innerHTML = '';
-    if(pending.length===0) { el.innerHTML='<div class="text-center text-gray-400 text-xs py-4">Tudo em dia!</div>'; return; }
+    if(pending.length===0) { el.innerHTML='<div class="text-center text-gray-400 text-xs py-4">Nada pendente.</div>'; return; }
     
     sortData(pending);
 
@@ -404,7 +432,7 @@ function renderExtratoTable(data) {
     el.innerHTML = h + '</div>';
 }
 
-// --- MODAL SEGURO ---
+// ... (MODAL IGUAL AO ANTERIOR) ...
 const modal = document.getElementById('modal-transaction');
 const form = document.getElementById('form-transaction');
 const inputAmount = document.getElementById('input-amount');
