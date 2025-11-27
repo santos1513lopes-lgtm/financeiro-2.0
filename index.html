@@ -43,10 +43,8 @@
         <div class="flex gap-3 items-center">
             <button id="btn-toggle-values-mobile" class="text-gray-300 hover:text-white"><i class="fas fa-eye"></i></button>
             <button id="btn-theme-mobile" class="text-gray-300 hover:text-white"><i class="fas fa-moon"></i></button>
-            
             <div class="relative">
                 <button id="btn-profile-mobile" class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/20 focus:outline-none">U</button>
-                
                 <div id="mobile-profile-dropdown" class="hidden absolute right-0 mt-3 w-48 bg-white dark:bg-darkcard rounded-xl shadow-2xl py-2 border border-slate-100 dark:border-gray-700 z-50 transform origin-top-right">
                     <div class="px-4 py-2 border-b dark:border-gray-700 mb-1">
                         <p class="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Conta</p>
@@ -68,11 +66,9 @@
             <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-chart-pie text-white"></i></div>
             <h1 class="text-xl font-bold text-white tracking-wide">Painel Empresarial</h1>
         </div>
-        
         <div class="flex items-center gap-4">
             <button id="btn-toggle-values-desktop" class="text-gray-300 hover:text-white transition" title="Ocultar Valores"><i class="fas fa-eye text-lg"></i></button>
             <button id="btn-theme-desktop" class="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 text-yellow-400 flex items-center justify-center transition shadow-inner"><i class="fas fa-moon"></i></button>
-
             <div class="relative">
                 <button id="btn-profile-desktop" class="flex items-center gap-3 focus:outline-none">
                     <div class="text-right hidden lg:block">
@@ -81,7 +77,6 @@
                     </div>
                     <div id="avatar-display" class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-slate-600 hover:ring-blue-400 transition cursor-pointer">?</div>
                 </button>
-                
                 <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-64 bg-white dark:bg-darkcard rounded-xl shadow-2xl py-2 border border-slate-100 dark:border-gray-700 z-50 transform origin-top-right transition-all">
                     <div class="px-4 py-3 border-b dark:border-gray-700">
                         <p class="text-xs text-slate-500 dark:text-slate-400">Logado como:</p>
@@ -102,10 +97,9 @@
         <nav class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
             <button class="nav-desktop active rounded-md px-4 py-2 text-sm font-bold transition" data-tab="dashboard">Visão Geral</button>
             <button class="nav-desktop rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 transition" data-tab="transacoes">Lançamentos</button>
-            <button class="nav-desktop rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 transition" data-tab="futuras">Contas a Pagar</button>
+            <button class="nav-desktop rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 transition" data-tab="futuras">Lançamentos Futuros</button>
             <button class="nav-desktop rounded-md px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 transition" data-tab="extrato">Relatórios</button>
         </nav>
-
         <div class="relative w-56">
             <input type="month" id="global-month" class="w-full pl-4 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 font-bold text-slate-700 dark:text-white bg-white dark:bg-darkcard shadow-sm focus:ring-2 focus:ring-blue-500 outline-none dark:[color-scheme:dark] cursor-pointer">
         </div>
@@ -135,15 +129,22 @@
                 <section id="tab-dashboard" class="tab-content">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Faturamento</div>
+                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Receita</div>
                             <div class="value-blur text-2xl font-bold text-green-600" id="dash-receitas">R$ 0,00</div>
                         </div>
                         <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500">
                             <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div>
                             <div class="value-blur text-2xl font-bold text-red-600" id="dash-despesas">R$ 0,00</div>
                         </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo em Caixa</div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500 relative">
+                            <div class="flex justify-between items-start">
+                                <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo em Caixa</div>
+                                <label class="inline-flex items-center cursor-pointer" title="Incluir Lançamentos Futuros">
+                                    <input type="checkbox" id="toggle-future-balance" class="sr-only peer">
+                                    <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                    <span class="ms-2 text-[10px] font-medium text-slate-400 dark:text-slate-500">Futuro</span>
+                                </label>
+                            </div>
                             <div class="value-blur text-2xl font-bold text-blue-600" id="dash-saldo">R$ 0,00</div>
                         </div>
                     </div>
@@ -178,10 +179,21 @@
                 </section>
                 
                  <section id="tab-futuras" class="tab-content hidden">
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-4 flex justify-between items-center border border-indigo-100 dark:border-indigo-800">
-                        <div><div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">Fluxo Previsto</div><div id="future-balance" class="value-blur text-xl font-bold text-slate-700 dark:text-slate-200">R$ ...</div></div>
-                        <i class="fas fa-wallet text-2xl text-indigo-500"></i>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800">
+                            <div class="text-green-600 dark:text-green-400 text-xs font-bold uppercase mb-1">A Receber</div>
+                            <div id="future-income" class="value-blur text-xl font-bold text-green-700 dark:text-green-300">R$ 0,00</div>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800">
+                            <div class="text-red-600 dark:text-red-400 text-xs font-bold uppercase mb-1">A Pagar</div>
+                            <div id="future-expense" class="value-blur text-xl font-bold text-red-700 dark:text-red-300">R$ 0,00</div>
+                        </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                            <div class="text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase mb-1">Fluxo Previsto</div>
+                            <div id="future-balance" class="value-blur text-xl font-bold text-indigo-700 dark:text-indigo-300">R$ 0,00</div>
+                        </div>
                     </div>
+                    
                     <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 border-b border-slate-300 dark:border-slate-700">
                         <div class="col-span-2 cursor-pointer hover:text-blue-600" onclick="toggleSort('date')">Vencimento <i class="fas fa-sort ml-1"></i></div>
                         <div class="col-span-5 cursor-pointer hover:text-blue-600" onclick="toggleSort('description')">Descrição <i class="fas fa-sort ml-1"></i></div>
@@ -221,18 +233,10 @@
             <form id="form-transaction" class="flex-1 overflow-y-auto pb-20 custom-scrollbar">
                 <input type="hidden" id="tx-id">
                 <div class="mb-5"><label class="text-xs text-gray-500 font-bold uppercase ml-1">Valor</label><div class="relative mt-1"><span class="absolute left-3 top-3 text-gray-500 font-bold text-lg">R$</span><input id="input-amount" type="tel" inputmode="numeric" placeholder="0,00" required class="w-full text-3xl font-bold bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 outline-none pl-10 py-3 text-slate-800 dark:text-white" /></div></div>
-                
-                <div class="bg-slate-100 dark:bg-slate-700/50 p-1.5 rounded-xl flex mb-4 ring-1 ring-slate-200 dark:ring-slate-600">
-                    <label class="flex-1 cursor-pointer relative"><input type="radio" name="type" value="saida" class="peer hidden" checked><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-red-400 dark:peer-checked:ring-1 dark:peer-checked:ring-red-500/50"><i class="fas fa-arrow-down mr-2"></i>Saída</div></label>
-                    <label class="flex-1 cursor-pointer relative ml-1"><input type="radio" name="type" value="entrada" class="peer hidden"><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-green-400 dark:peer-checked:ring-1 dark:peer-checked:ring-green-500/50"><i class="fas fa-arrow-up mr-2"></i>Entrada</div></label>
-                </div>
-
+                <div class="bg-slate-100 dark:bg-slate-700/50 p-1.5 rounded-xl flex mb-4 ring-1 ring-slate-200 dark:ring-slate-600"><label class="flex-1 cursor-pointer relative"><input type="radio" name="type" value="saida" class="peer hidden" checked><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-red-400 dark:peer-checked:ring-1 dark:peer-checked:ring-red-500/50"><i class="fas fa-arrow-down mr-2"></i>Saída</div></label><label class="flex-1 cursor-pointer relative ml-1"><input type="radio" name="type" value="entrada" class="peer hidden"><div class="py-2.5 text-center rounded-lg text-sm font-bold text-slate-500 dark:text-slate-300 transition-all duration-200 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-md dark:peer-checked:bg-slate-800 dark:peer-checked:text-green-400 dark:peer-checked:ring-1 dark:peer-checked:ring-green-500/50"><i class="fas fa-arrow-up mr-2"></i>Entrada</div></label></div>
                 <div class="grid grid-cols-2 gap-4 mb-4"><div><label class="text-xs font-bold text-gray-500">Data</label><input type="date" id="input-date" required class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white"></div><div><label class="text-xs font-bold text-gray-500">Categoria</label><select id="input-category" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none bg-white dark:bg-gray-800 dark:text-white"></select></div></div>
                 <div class="mb-4"><label class="text-xs font-bold text-gray-500">Descrição</label><input id="input-desc" placeholder="Ex: Fornecedor ABC" class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-600 outline-none dark:text-white"></div>
-                <div class="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700 mb-6">
-                    <div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Repetição</label><select id="input-recurrence" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="single">Única</option><option value="installment">Parcelado</option><option value="fixed">Fixo</option></select></div><div id="div-period-count" class="hidden"><label class="text-xs font-bold text-gray-500">Qtd.</label><input type="number" id="input-installments" value="2" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div>
-                    <div id="div-frequency" class="hidden border-t dark:border-gray-600 pt-3 mt-2"><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-bold text-gray-500">Frequência</label><select id="input-frequency" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="monthly">Mensal</option><option value="biweekly">Quinzenal</option><option value="custom">Personalizado</option></select></div><div id="div-custom-days" class="hidden"><label class="text-xs font-bold text-gray-500">Dias</label><input type="number" id="input-custom-days" value="10" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div></div>
-                </div>
+                <div class="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700 mb-6"><div class="grid grid-cols-2 gap-4 mb-3"><div><label class="text-xs font-bold text-gray-500">Repetição</label><select id="input-recurrence" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="single">Única</option><option value="installment">Parcelado</option><option value="fixed">Fixo</option></select></div><div id="div-period-count" class="hidden"><label class="text-xs font-bold text-gray-500">Qtd.</label><input type="number" id="input-installments" value="2" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div><div id="div-frequency" class="hidden border-t dark:border-gray-600 pt-3 mt-2"><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-bold text-gray-500">Frequência</label><select id="input-frequency" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"><option value="monthly">Mensal</option><option value="biweekly">Quinzenal</option><option value="custom">Personalizado</option></select></div><div id="div-custom-days" class="hidden"><label class="text-xs font-bold text-gray-500">Dias</label><input type="number" id="input-custom-days" value="10" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-600 dark:text-white text-sm"></div></div></div></div>
                 <div class="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-blue-900/20 p-3 rounded-lg border border-slate-200 dark:border-blue-800"><input id="input-paid" type="checkbox" checked class="w-5 h-5 text-blue-600 rounded"><label for="input-paid" class="text-sm font-bold text-gray-700 dark:text-gray-300">Status: <span id="status-text" class="text-green-600">Concluído</span></label></div>
                 <div class="flex gap-3"><button type="button" id="btn-delete" class="hidden flex-1 bg-red-100 text-red-600 hover:bg-red-200 font-bold py-4 rounded-xl transition">Excluir</button><button type="submit" id="btn-save" class="flex-[3] bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition">Salvar</button></div>
             </form>
@@ -241,11 +245,9 @@
 
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-          .then(() => console.log('PWA Instalável OK'));
+        navigator.serviceWorker.register('sw.js').then(() => console.log('PWA OK'));
       }
     </script>
-    
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

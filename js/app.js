@@ -11,6 +11,7 @@ let transactions = [];
 let chartInstance = null;
 let sortConfig = { column: 'date', direction: 'desc' };
 let valuesVisible = true;
+let includeFuture = false; 
 
 const views = {
     dashboard: document.getElementById('tab-dashboard'),
@@ -20,27 +21,23 @@ const views = {
 };
 
 const categoryIcons = {
-    "Saldo Inicial": "🏛️", "Vendas": "💰", "Serviços": "🛠️", "Reposição de Estoque": "📦", "Poupança": "🐷", "Donativo": "🤝",
+    "Saldo Inicial": "🏛️", "Vendas": "💰", "Serviços": "🛠️", "Reposição de Estoque": "📦", "Poupança": "🐷", "Donativo": "🤝", "Salário": "💵",
     "Pró-labore": "💼", "MEI/DAS": "📄", "Impostos": "💸", "Empréstimo": "🏦",
     "INSS": "🛡️", "Marketing": "📢", "Logística/Frete": "🚚", "Aluguel/Condomínio": "🏢",
     "Energia/Água/Net": "⚡", "Equipamentos": "💻", "Outros": "🔹"
 };
 function getIcon(cat) { return categoryIcons[cat] || "🔹"; }
 
-// --- AUTH & PROFILE ---
+// --- AUTH ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-content').classList.remove('hidden');
-        
-        // CORREÇÃO BARRA DUPLICADA NO MOBILE
         const topControls = document.getElementById('top-controls');
         if(topControls) {
-            // Garante que começa escondida
             topControls.classList.remove('hidden');
-            // Adiciona classes específicas: Flex no Desktop, Hidden no Mobile
-            topControls.classList.add('hidden', 'md:flex');
+            topControls.classList.add('md:flex');
         }
         
         const email = user.email;
@@ -82,41 +79,34 @@ const toggleValues = () => {
 if(document.getElementById('btn-toggle-values-desktop')) document.getElementById('btn-toggle-values-desktop').onclick = toggleValues;
 if(document.getElementById('btn-toggle-values-mobile')) document.getElementById('btn-toggle-values-mobile').onclick = toggleValues;
 
-// Lógica Dropdown Mobile
-const btnMobProfile = document.getElementById('btn-profile-mobile');
-const dropMob = document.getElementById('mobile-profile-dropdown');
-if(btnMobProfile && dropMob) {
-    btnMobProfile.onclick = (e) => {
-        e.stopPropagation();
-        dropMob.classList.toggle('hidden');
-    };
-    window.addEventListener('click', (e) => {
-        if (!btnMobProfile.contains(e.target) && !dropMob.contains(e.target)) {
-            dropMob.classList.add('hidden');
-        }
+// --- TOGGLE FUTURO (SALDO) ---
+const toggleFuture = document.getElementById('toggle-future-balance');
+if(toggleFuture) {
+    toggleFuture.addEventListener('change', (e) => {
+        includeFuture = e.target.checked;
+        updateInterface();
     });
 }
 
-// Lógica Dropdown Desktop
+// Lógica Dropdowns
+const btnMobProfile = document.getElementById('btn-profile-mobile');
+const dropMob = document.getElementById('mobile-profile-dropdown');
+if(btnMobProfile && dropMob) {
+    btnMobProfile.onclick = (e) => { e.stopPropagation(); dropMob.classList.toggle('hidden'); };
+    window.addEventListener('click', (e) => { if (!btnMobProfile.contains(e.target) && !dropMob.contains(e.target)) dropMob.classList.add('hidden'); });
+}
 const btnDeskProfile = document.getElementById('btn-profile-desktop');
 const dropDesk = document.getElementById('profile-dropdown');
 if(btnDeskProfile && dropDesk) {
-    btnDeskProfile.onclick = (e) => {
-        e.stopPropagation();
-        dropDesk.classList.toggle('hidden');
-    };
-    window.addEventListener('click', (e) => {
-        if (!btnDeskProfile.contains(e.target) && !dropDesk.contains(e.target)) {
-            dropDesk.classList.add('hidden');
-        }
-    });
+    btnDeskProfile.onclick = (e) => { e.stopPropagation(); dropDesk.classList.toggle('hidden'); };
+    window.addEventListener('click', (e) => { if (!btnDeskProfile.contains(e.target) && !dropDesk.contains(e.target)) dropDesk.classList.add('hidden'); });
 }
 
 // Zerar Dados
 const wipeData = async () => {
-    if(confirm("ATENÇÃO: Isso apagará TODOS os seus lançamentos. Deseja continuar?")) {
-        const confirm2 = prompt("Digite a palavra ZERAR para confirmar:");
-        if(confirm2 === "ZERAR") {
+    if(confirm("ATENÇÃO: Isso apagará TODOS os lançamentos. Deseja continuar?")) {
+        const c2 = prompt("Digite ZERAR para confirmar:");
+        if(c2 === "ZERAR") {
             try {
                 const q = query(collection(db, "transactions"), where("user_id", "==", currentUser.uid));
                 const snapshot = await getDocs(q);
@@ -127,12 +117,10 @@ const wipeData = async () => {
         }
     }
 };
-const btnWipeDesk = document.getElementById('btn-wipe-data');
-if(btnWipeDesk) btnWipeDesk.onclick = wipeData;
-const btnWipeMob = document.getElementById('btn-wipe-data-mobile');
-if(btnWipeMob) btnWipeMob.onclick = wipeData;
+if(document.getElementById('btn-wipe-data')) document.getElementById('btn-wipe-data').onclick = wipeData;
+if(document.getElementById('btn-wipe-data-mobile')) document.getElementById('btn-wipe-data-mobile').onclick = wipeData;
 
-const logout = () => { if(confirm("Sair do sistema?")) signOut(auth); };
+const logout = () => { if(confirm("Sair?")) signOut(auth); };
 if(document.getElementById('btn-logout-dropdown')) document.getElementById('btn-logout-dropdown').onclick = logout;
 if(document.getElementById('btn-logout-mobile')) document.getElementById('btn-logout-mobile').onclick = logout;
 
@@ -190,10 +178,8 @@ async function initApp() {
 
 const syncDate = (e) => {
     const v = e.target.value;
-    const desk = document.getElementById('global-month');
-    const mob = document.getElementById('global-month-mobile');
-    if(desk) desk.value = v;
-    if(mob) mob.value = v;
+    document.getElementById('global-month').value = v;
+    if(document.getElementById('global-month-mobile')) document.getElementById('global-month-mobile').value = v;
     updateInterface();
 };
 if(document.getElementById('global-month')) document.getElementById('global-month').addEventListener('change', syncDate);
@@ -203,24 +189,38 @@ function getCurrentMonthData() {
     const el = document.getElementById('global-month');
     return el ? transactions.filter(t => t.date.startsWith(el.value)) : [];
 }
+function getAccumulatedData() {
+    const el = document.getElementById('global-month');
+    if(!el) return [];
+    const selectedMonth = el.value; 
+    return transactions.filter(t => t.date.slice(0, 7) <= selectedMonth);
+}
 
 function updateInterface() {
-    const data = getCurrentMonthData();
-    const rec = data.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
-    const desp = data.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
-    document.getElementById('dash-receitas').innerText = fmtMoney(rec);
-    document.getElementById('dash-despesas').innerText = fmtMoney(desp);
-    document.getElementById('dash-saldo').innerText = fmtMoney(rec - desp);
+    const monthData = getCurrentMonthData();
+    const recMonth = monthData.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
+    const despMonth = monthData.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
+    document.getElementById('dash-receitas').innerText = fmtMoney(recMonth);
+    document.getElementById('dash-despesas').innerText = fmtMoney(despMonth);
+
+    const accData = getAccumulatedData();
+    let recAcc = 0; let despAcc = 0;
+    if(includeFuture) {
+        recAcc = accData.filter(t => t.type === 'entrada').reduce((a,t) => a+t.amount,0);
+        despAcc = accData.filter(t => t.type === 'saida').reduce((a,t) => a+t.amount,0);
+    } else {
+        recAcc = accData.filter(t => t.type === 'entrada' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
+        despAcc = accData.filter(t => t.type === 'saida' && t.status === 'efetivado').reduce((a,t) => a+t.amount,0);
+    }
+    document.getElementById('dash-saldo').innerText = fmtMoney(recAcc - despAcc);
     
     const term = document.getElementById('search-trans') ? document.getElementById('search-trans').value.toLowerCase() : "";
-    renderTransactionList(filterData(data, term));
-    
+    renderTransactionList(filterData(monthData, term));
     renderFutureList(); 
-    renderRecentList(data);
-    renderChart(data);
-    
+    renderRecentList(monthData);
+    renderChart(monthData);
     const termRep = document.getElementById('search-report') ? document.getElementById('search-report').value.toLowerCase() : "";
-    renderExtratoTable(filterData(data, termRep));
+    renderExtratoTable(filterData(monthData, termRep));
     
     if(!valuesVisible) { document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none')); }
 }
@@ -287,7 +287,6 @@ if(document.getElementById('btn-download-csv')) document.getElementById('btn-dow
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
 };
 
-// RENDER RECENTES
 function renderRecentList(data) {
     const el = document.getElementById('recent-transactions-list');
     if(!el) return;
@@ -308,7 +307,6 @@ function renderRecentList(data) {
     });
 }
 
-// RENDER LISTA PRINCIPAL
 function renderTransactionList(data) {
     const el = document.getElementById('transaction-list');
     if(!el) return;
@@ -337,16 +335,24 @@ function renderTransactionList(data) {
     });
 }
 
-// RENDER (Contas Futuras)
+// RENDER FUTURAS (ATUALIZADA)
 function renderFutureList() {
     const today = new Date().toISOString().split('T')[0];
     const pending = transactions.filter(t => t.status === 'pendente');
     
     const recP = pending.filter(t => t.type === 'entrada').reduce((a,b)=>a+b.amount,0);
     const despP = pending.filter(t => t.type === 'saida').reduce((a,b)=>a+b.amount,0);
+    
+    // Atualiza os 3 cards
+    const elFutInc = document.getElementById('future-income');
+    const elFutExp = document.getElementById('future-expense');
     const elFutBal = document.getElementById('future-balance');
+    
+    if(elFutInc) elFutInc.innerText = fmtMoney(recP);
+    if(elFutExp) elFutExp.innerText = fmtMoney(despP);
     if(elFutBal) elFutBal.innerText = fmtMoney(recP - despP);
     
+    // Lista
     const el = document.getElementById('future-list');
     if(!el) return;
     el.innerHTML = '';
@@ -360,10 +366,7 @@ function renderFutureList() {
         const color = isExp ? 'text-red-600' : 'text-green-600';
         const icon = isExp ? 'fa-arrow-down' : 'fa-arrow-up';
         const bgIcon = isExp ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20';
-        
-        const rowBg = isLate 
-            ? 'bg-red-50 dark:bg-red-900/10 border-l-4 border-l-red-500' 
-            : (idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50');
+        const rowBg = isLate ? 'bg-red-50 dark:bg-red-900/10 border-l-4 border-l-red-500' : (idx % 2 === 0 ? 'bg-white dark:bg-darkcard' : 'bg-slate-50 dark:bg-slate-800/50');
         const dateClass = isLate ? 'text-red-600 font-bold animate-pulse' : 'text-slate-600 dark:text-gray-300';
         const warningIcon = isLate ? '<i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>' : '';
 
@@ -371,7 +374,7 @@ function renderFutureList() {
             <div class="group ${rowBg} p-3 border-b border-slate-100 dark:border-gray-700 flex flex-col md:grid md:grid-cols-12 md:gap-4 md:items-center">
                 <div class="flex items-center gap-3 md:hidden">
                     <div class="w-8 h-8 rounded-full ${bgIcon} flex items-center justify-center ${color} text-xs"><i class="fas ${icon}"></i></div>
-                    <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-600 font-bold':'text-gray-400'}">${warningIcon} ${isLate?'VENCIDO: ':''}${fmtDate(t.date)}</div></div>
+                    <div class="flex flex-col"><span class="font-bold text-sm text-slate-800 dark:text-gray-200 truncate max-w-[180px]">${t.description}</span><div class="text-xs ${isLate?'text-red-500 font-bold':'text-gray-400'}">${warningIcon} ${isLate?'VENCIDO: ':''}${fmtDate(t.date)}</div></div>
                     <div class="text-right"><div class="text-sm font-bold ${color} value-blur">${fmtMoney(t.amount)}</div><button onclick="payTransaction('${t.id}')" class="text-[10px] bg-slate-100 hover:bg-green-100 text-slate-600 hover:text-green-700 px-2 py-1 rounded mt-1">Baixar</button></div>
                 </div>
                 <div class="hidden md:block text-sm col-span-2 font-mono ${dateClass}">${warningIcon} ${fmtDate(t.date)}</div>
@@ -380,9 +383,10 @@ function renderFutureList() {
                 <div class="hidden md:flex justify-center col-span-2"><button onclick="payTransaction('${t.id}')" class="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-bold px-3 py-1 rounded transition">Baixar</button></div>
             </div>`;
     });
+    
+    if(!valuesVisible) { document.querySelectorAll('.value-blur').forEach(el => el.classList.add('blur-sm', 'select-none')); }
 }
 
-// RENDER (Extrato Relatórios)
 function renderExtratoTable(data) {
     const el = document.getElementById('report-preview');
     if(!el) return;
