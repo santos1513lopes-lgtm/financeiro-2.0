@@ -92,7 +92,6 @@
         </div>
 
         <div id="main-scroll" class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-darkbg p-4 md:p-8 pb-24 md:pb-8">
-            
             <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6">
                 <div class="w-full max-w-sm bg-white dark:bg-darkcard p-8 rounded-2xl shadow-2xl">
                     <div class="mb-6 flex justify-center"><i class="fas fa-chart-pie text-5xl text-blue-600"></i></div>
@@ -105,25 +104,45 @@
             </div>
 
             <div id="app-content" class="hidden animate-fade-in">
+                
                 <section id="tab-dashboard" class="tab-content">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Receita</div>
-                            <div class="value-blur text-2xl font-bold text-green-600" id="dash-receitas">R$ 0,00</div>
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-green-500 flex flex-col justify-between">
+                            <div>
+                                <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Receita</div>
+                                <div class="value-blur text-2xl font-bold text-green-600" id="dash-receitas">R$ 0,00</div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Entradas efetivadas no período</p>
                         </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div>
-                            <div class="value-blur text-2xl font-bold text-red-600" id="dash-despesas">R$ 0,00</div>
+
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-red-500 flex flex-col justify-between">
+                            <div>
+                                <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Despesas</div>
+                                <div class="value-blur text-2xl font-bold text-red-600" id="dash-despesas">R$ 0,00</div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Saídas pagas no período</p>
                         </div>
-                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500 relative">
-                            <div class="flex justify-between"><div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo</div><label class="inline-flex items-center cursor-pointer"><input type="checkbox" id="toggle-future-balance" class="sr-only peer"><div class="relative w-8 h-4 bg-slate-200 rounded-full peer dark:bg-slate-700 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></div></label></div>
-                            <div class="value-blur text-2xl font-bold text-blue-600" id="dash-saldo">R$ 0,00</div>
+
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-blue-500 relative flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between">
+                                    <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Saldo</div>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" id="toggle-future-balance" class="sr-only peer"><div class="relative w-8 h-4 bg-slate-200 rounded-full peer dark:bg-slate-700 peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></div></label>
+                                </div>
+                                <div class="value-blur text-2xl font-bold text-blue-600" id="dash-saldo">R$ 0,00</div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Disponível em caixa (Acumulado)</p>
                         </div>
-                         <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
-                            <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Investimentos 🐷</div>
-                            <div class="value-blur text-2xl font-bold text-purple-600" id="dash-invest">R$ 0,00</div>
+
+                        <div class="bg-white dark:bg-darkcard p-5 rounded-xl shadow-sm border-l-4 border-purple-500 flex flex-col justify-between">
+                            <div>
+                                <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Investimentos 🐷</div>
+                                <div class="value-blur text-2xl font-bold text-purple-600" id="dash-invest">R$ 0,00</div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Total guardado em Poupança</p>
                         </div>
                     </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700"><div class="h-64 relative w-full flex justify-center"><canvas id="expenseChart"></canvas></div></div>
                         <div class="bg-white dark:bg-darkcard p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col"><h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Recentes</h3><div id="recent-transactions-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 max-h-[250px]"></div></div>
@@ -131,16 +150,18 @@
                 </section>
 
                 <section id="tab-transacoes" class="tab-content hidden">
-                    <div class="mb-4"><input id="search-trans" placeholder="🔍 Pesquisar..." class="w-full p-3 rounded-xl bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 shadow-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
-                    <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 sticky top-0 z-10">
-                        <div class="col-span-2 cursor-pointer" onclick="toggleSort('date')">Data <i class="fas fa-sort"></i></div>
-                        <div class="col-span-4 cursor-pointer" onclick="toggleSort('description')">Descrição <i class="fas fa-sort"></i></div>
-                        <div class="col-span-2">Categoria</div>
-                        <div class="col-span-2 text-right cursor-pointer" onclick="toggleSort('amount')">Valor <i class="fas fa-sort"></i></div>
-                        <div class="col-span-1 text-center">Status</div>
-                        <div class="col-span-1 text-center">Ação</div>
+                    <div class="flex flex-col h-full">
+                        <div class="mb-4"><input id="search-trans" placeholder="🔍 Pesquisar..." class="w-full p-3 rounded-xl bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 shadow-sm outline-none dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
+                        <div class="hidden md:grid grid-cols-12 gap-4 p-3 bg-slate-200 dark:bg-slate-800 rounded-t-lg font-bold text-xs uppercase text-slate-600 dark:text-slate-400 sticky top-0 z-10">
+                            <div class="col-span-2 cursor-pointer" onclick="toggleSort('date')">Data <i class="fas fa-sort"></i></div>
+                            <div class="col-span-4 cursor-pointer" onclick="toggleSort('description')">Descrição <i class="fas fa-sort"></i></div>
+                            <div class="col-span-2">Categoria</div>
+                            <div class="col-span-2 text-right cursor-pointer" onclick="toggleSort('amount')">Valor <i class="fas fa-sort"></i></div>
+                            <div class="col-span-1 text-center">Status</div>
+                            <div class="col-span-1 text-center">Ação</div>
+                        </div>
+                        <div id="transaction-list" class="space-y-2 md:space-y-0 md:bg-white md:dark:bg-darkcard md:rounded-b-lg md:shadow-sm"></div>
                     </div>
-                    <div id="transaction-list" class="space-y-2 md:space-y-0 md:bg-white md:dark:bg-darkcard md:rounded-b-lg md:shadow-sm"></div>
                 </section>
 
                 <section id="tab-futuras" class="tab-content hidden">
@@ -176,7 +197,6 @@
     </main>
 
     <button id="fab-add" class="fixed right-6 bottom-20 md:bottom-10 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 transition-transform active:scale-90 border-4 border-white dark:border-slate-800"><i class="fas fa-plus"></i></button>
-
     <nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-darkcard border-t dark:border-slate-800 flex justify-around py-3 md:hidden z-50 safe-area-bottom shadow-lg">
         <button class="nav-item active flex flex-col items-center text-blue-600" data-tab="dashboard"><i class="fas fa-chart-pie text-xl mb-0.5"></i><span class="text-[10px] font-bold">Painel</span></button>
         <button class="nav-item flex flex-col items-center text-slate-400" data-tab="transacoes"><i class="fas fa-list text-xl mb-0.5"></i><span class="text-[10px] font-medium">Lanç.</span></button>
